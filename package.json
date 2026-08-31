@@ -2,13 +2,18 @@
   "name": "pharmacy-app",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:seed": "node --input-type=module < src/lib/db/seed.js"
   },
   "dependencies": {
+    "better-sqlite3": "^13.0.3",
+    "cheerio": "^1.2.0",
+    "exceljs": "^4.4.0",
     "next": "16.3.3",
     "react": "19.2.8",
     "react-dom": "19.2.8"
