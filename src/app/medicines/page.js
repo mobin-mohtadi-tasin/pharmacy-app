@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Modal from '@/components/Modal';
 import { useToast } from '@/components/Toast';
@@ -16,8 +16,7 @@ export default function MedicinesPage() {
   const [historyModal, setHistoryModal] = useState({ open: false, med: null, history: [] });
   const { show, ToastEl } = useToast();
 
-  const loadMedicines = async () => {
-    setLoading(true);
+  const loadMedicines = useCallback(async () => {
     const params = new URLSearchParams();
     if (search) params.set('search', search);
     if (groupFilter) params.set('group_id', groupFilter);
@@ -26,10 +25,29 @@ export default function MedicinesPage() {
     const data = await res.json();
     setMedicines(data.data || []);
     setLoading(false);
-  };
+  }, [search, groupFilter, lowStock]);
 
-  useEffect(() => { loadMedicines(); }, [search, groupFilter, lowStock]);
-  useEffect(() => { fetch('/api/groups').then(r => r.json()).then(r => setGroups(r.data || [])); }, []);
+  useEffect(() => {
+    let ignore = false;
+    const fetchMeds = async () => {
+      const params = new URLSearchParams();
+      if (search) params.set('search', search);
+      if (groupFilter) params.set('group_id', groupFilter);
+      if (lowStock) params.set('low_stock', 'true');
+      const res = await fetch(`/api/medicines?${params}`);
+      const data = await res.json();
+      if (!ignore) {
+        setMedicines(data.data || []);
+        setLoading(false);
+      }
+    };
+    fetchMeds();
+    return () => { ignore = true; };
+  }, [search, groupFilter, lowStock]);
+
+  useEffect(() => {
+    fetch('/api/groups').then(r => r.json()).then(r => setGroups(r.data || []));
+  }, []);
 
   const handleEdit = async (e) => {
     e.preventDefault();
@@ -105,7 +123,7 @@ export default function MedicinesPage() {
               <th>Unit</th>
               <th>Stock</th>
               <th>Avg Cost</th>
-              <th>Last Price</th>
+              <th>Selling Price</th>
               <th></th>
             </tr>
           </thead>
@@ -169,7 +187,7 @@ export default function MedicinesPage() {
               </select>
             </div>
             <div><label className="label">MRP</label><input type="number" step="0.01" className="input" value={editModal.med.mrp || ''} onChange={e => setMedField('mrp', e.target.value)} /></div>
-            <div><label className="label">Last Selling Price</label><input type="number" step="0.01" className="input" value={editModal.med.last_selling_price || ''} onChange={e => setMedField('last_selling_price', e.target.value)} /></div>
+            <div><label className="label">Selling Price</label><input type="number" step="0.01" className="input" value={editModal.med.last_selling_price || ''} onChange={e => setMedField('last_selling_price', e.target.value)} placeholder="0.00" /></div>
             <div><label className="label">Low Stock Threshold</label><input type="number" className="input" value={editModal.med.low_stock_threshold || 10} onChange={e => setMedField('low_stock_threshold', e.target.value)} /></div>
             <div className="col-span-2"><label className="label">Source URL</label><input className="input" value={editModal.med.source_url || ''} onChange={e => setMedField('source_url', e.target.value)} /></div>
             <div className="col-span-2 flex gap-3 pt-2">

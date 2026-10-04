@@ -66,7 +66,8 @@ export default function MedicineSearch({ onSelect, placeholder = 'Search medicin
 
   return (
     <div className={`relative ${className}`}>
-      <div className="relative">
+      <div className="relative group">
+        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm transition-all duration-300 group-focus-within:text-brand-400 group-focus-within:scale-110">⌕</span>
         <input
           ref={inputRef}
           type="text"
@@ -76,7 +77,7 @@ export default function MedicineSearch({ onSelect, placeholder = 'Search medicin
           onFocus={() => query && setOpen(true)}
           onBlur={() => setTimeout(() => setOpen(false), 150)}
           placeholder={placeholder}
-          className="input pr-8"
+          className="input pl-8 pr-8"
         />
         {loading && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -86,12 +87,14 @@ export default function MedicineSearch({ onSelect, placeholder = 'Search medicin
       </div>
 
       {open && results.length > 0 && (
-        <div className="absolute z-40 w-full mt-1 bg-[#0f1812] border border-[#253d28] rounded-xl shadow-2xl overflow-hidden max-h-72 overflow-y-auto">
+        <div className="absolute z-40 w-full mt-1 bg-[#0f1812]/95 backdrop-blur-md border border-[#253d28] rounded-xl shadow-2xl shadow-black/60 overflow-hidden max-h-72 overflow-y-auto origin-top animate-scale-in">
           {results.map((med, i) => (
             <button
               key={med.id}
               onMouseDown={() => handleSelect(med)}
-              className={`w-full text-left px-4 py-2.5 flex items-start gap-3 transition-colors ${i === activeIdx ? 'bg-brand-600/20 text-brand-300' : 'hover:bg-[#1d3021] text-gray-200'}`}
+              onMouseEnter={() => setActiveIdx(i)}
+              style={{ animation: `row-in 0.3s cubic-bezier(0.16,1,0.3,1) ${Math.min(i, 10) * 30}ms backwards` }}
+              className={`relative w-full text-left px-4 py-2.5 flex items-start gap-3 transition-all duration-200 ${i === activeIdx ? 'bg-brand-600/20 text-brand-300 pl-5 shadow-[inset_3px_0_0_#22c55e]' : 'text-gray-200'}`}
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
@@ -114,8 +117,8 @@ export default function MedicineSearch({ onSelect, placeholder = 'Search medicin
       )}
 
       {open && query.length >= 1 && results.length === 0 && !loading && (
-        <div className="absolute z-40 w-full mt-1 bg-[#0f1812] border border-[#253d28] rounded-xl shadow-2xl px-4 py-3 text-sm text-gray-500">
-          No medicines found for "{query}"
+        <div className="absolute z-40 w-full mt-1 bg-[#0f1812] border border-[#253d28] rounded-xl shadow-2xl px-4 py-3 text-sm text-gray-500 origin-top animate-scale-in">
+          🔍 No medicines found for &ldquo;{query}&rdquo;
         </div>
       )}
     </div>

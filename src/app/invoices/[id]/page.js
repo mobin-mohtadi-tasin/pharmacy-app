@@ -31,7 +31,7 @@ export default function InvoiceDetailPage({ params }) {
         <div className="lg:col-span-2">
           <div className="table-wrap">
             <table className="data-table">
-              <thead><tr><th>Medicine</th><th>Qty</th><th>Unit Price</th><th>Cost</th><th>Revenue</th><th>Profit</th></tr></thead>
+              <thead><tr><th>Medicine</th><th>Qty</th><th>Selling Price</th><th>Cost</th><th>Revenue</th><th>Profit</th></tr></thead>
               <tbody>
                 {items.map((item, i) => (
                   <tr key={i}>
@@ -49,9 +49,21 @@ export default function InvoiceDetailPage({ params }) {
               </tbody>
             </table>
           </div>
-          <div className="card p-4 mt-4 flex justify-between items-center">
-            <span className="text-gray-400">Total</span>
-            <span className="text-2xl font-bold text-brand-400">৳{Number(invoice.total_amount).toFixed(2)}</span>
+          <div className="card p-5 mt-4 space-y-2">
+            <div className="flex justify-between items-center text-sm text-gray-400">
+              <span>Subtotal</span>
+              <span className="text-gray-200 font-medium">৳{Number(invoice.subtotal || invoice.total_amount).toFixed(2)}</span>
+            </div>
+            {invoice.discount_percent > 0 && (
+              <div className="flex justify-between items-center text-sm text-yellow-400 font-medium">
+                <span>Discount ({invoice.discount_percent}%)</span>
+                <span>-৳{Number(invoice.discount_amount).toFixed(2)}</span>
+              </div>
+            )}
+            <div className="flex justify-between items-center pt-2 border-t border-[#1d3021]">
+              <span className="font-semibold text-gray-300">Total Paid</span>
+              <span className="text-2xl font-bold text-brand-400">৳{Number(invoice.total_amount).toFixed(2)}</span>
+            </div>
           </div>
         </div>
         <div>

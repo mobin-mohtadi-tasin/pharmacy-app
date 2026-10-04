@@ -12,16 +12,28 @@ export default function ReportsPage() {
   const [exporting, setExporting] = useState(false);
   const { show, ToastEl } = useToast();
 
-  const load = async () => {
-    setLoading(true);
-    const params = new URLSearchParams({ from, to });
-    const res = await fetch(`/api/reports/daily?${params}`);
-    const json = await res.json();
-    setData(json.data);
-    setLoading(false);
-  };
-
-  useEffect(() => { load(); }, [from, to]);
+  useEffect(() => {
+    let ignore = false;
+    const fetchReport = async () => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams({ from, to });
+        const res = await fetch(`/api/reports/daily?${params}`);
+        const json = await res.json();
+        if (!ignore) {
+          setData(json.data);
+        }
+      } catch (err) {
+        console.error('Failed to load report:', err);
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+        }
+      }
+    };
+    fetchReport();
+    return () => { ignore = true; };
+  }, [from, to]);
 
   const handleExport = async () => {
     setExporting(true);
@@ -152,7 +164,7 @@ export default function ReportsPage() {
             </div>
             <div className="table-wrap border-0 rounded-none rounded-b-xl">
               <table className="data-table">
-                <thead><tr><th>Invoice</th><th>Medicine</th><th>Group</th><th>Qty</th><th>Cost</th><th>Selling</th><th>Revenue</th><th>Profit</th><th>Payment</th></tr></thead>
+                <thead><tr><th>Invoice</th><th>Medicine</th><th>Group</th><th>Qty</th><th>Cost</th><th>Selling Price</th><th>Revenue</th><th>Profit</th><th>Payment</th></tr></thead>
                 <tbody>
                   {items.length === 0 ? (
                     <tr><td colSpan={9} className="text-center py-10 text-gray-500">No sales in this period</td></tr>

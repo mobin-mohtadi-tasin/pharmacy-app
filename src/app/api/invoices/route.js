@@ -26,7 +26,7 @@ export async function GET(req) {
 export async function POST(req) {
   try {
     const body = await req.json();
-    const { items, payment_method, notes, date } = body;
+    const { items, payment_method, notes, date, discount_percent } = body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return err('At least one item is required');
@@ -48,14 +48,26 @@ export async function POST(req) {
     }
 
     const invoice_no = generateInvoiceNo(db);
-    const total_amount = items.reduce((s, i) => s + (i.quantity * i.selling_price), 0);
+    const subtotal = items.reduce((s, i) => s + (i.quantity * i.selling_price), 0);
+    const discountPct = Math.min(100, Math.max(0, parseFloat(discount_percent) || 0));
+    const discount_amount = Number(((subtotal * discountPct) / 100).toFixed(2));
+    const total_amount = Math.max(0, Number((subtotal - discount_amount).toFixed(2)));
     const invoiceDate = date || new Date().toISOString().slice(0, 10);
 
     const createInvoice = db.transaction(() => {
       const inv = db.prepare(`
-        INSERT INTO invoices (invoice_no, date, total_amount, payment_method, notes)
-        VALUES (@invoice_no, @date, @total_amount, @payment_method, @notes)
-      `).run({ invoice_no, date: invoiceDate, total_amount, payment_method, notes: notes || null });
+        INSERT INTO invoices (invoice_no, date, subtotal, discount_percent, discount_amount, total_amount, payment_method, notes)
+        VALUES (@invoice_no, @date, @subtotal, @discount_percent, @discount_amount, @total_amount, @payment_method, @notes)
+      `).run({
+        invoice_no,
+        date: invoiceDate,
+        subtotal,
+        discount_percent: discountPct,
+        discount_amount,
+        total_amount,
+        payment_method,
+        notes: notes || null,
+      });
 
       const invoice_id = inv.lastInsertRowid;
 

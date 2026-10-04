@@ -17,6 +17,7 @@ export async function PUT(req, { params }) {
     const body = await req.json();
     const { name, generic_name, manufacturer, strength, dosage_form, unit_type, group_id, source_url, mrp, last_selling_price, low_stock_threshold } = body;
     if (!name?.trim()) return err('Medicine name is required');
+    const finalSellingPrice = last_selling_price != null && last_selling_price !== '' ? Number(last_selling_price) : (body.selling_price != null && body.selling_price !== '' ? Number(body.selling_price) : null);
     const db = getDb();
     db.prepare(`
       UPDATE medicines SET
@@ -30,7 +31,7 @@ export async function PUT(req, { params }) {
       manufacturer: manufacturer || null, strength: strength || null,
       dosage_form: dosage_form || null, unit_type: unit_type || 'strip',
       group_id: group_id || null, source_url: source_url || null,
-      mrp: mrp || null, last_selling_price: last_selling_price || null,
+      mrp: mrp || null, last_selling_price: finalSellingPrice,
       low_stock_threshold: low_stock_threshold || 10,
     });
     const med = db.prepare(`SELECT m.*, g.name as group_name FROM medicines m LEFT JOIN groups g ON g.id = m.group_id WHERE m.id = ?`).get(id);

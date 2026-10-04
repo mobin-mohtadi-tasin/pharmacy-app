@@ -20,7 +20,7 @@ export default function StockInPage() {
   const [form, setForm] = useState({
     medicine_id: '',
     name: '', generic_name: '', manufacturer: '', strength: '', dosage_form: '',
-    unit_type: 'strip', group_id: '', source_url: '', mrp: '',
+    unit_type: 'strip', group_id: '', source_url: '', mrp: '', selling_price: '',
     cost_price: '', quantity: '', batch_no: '', expiry_date: '', supplier: '',
     date: new Date().toISOString().slice(0, 10),
     isNew: true,
@@ -52,7 +52,7 @@ export default function StockInPage() {
 
   // Local search
   useEffect(() => {
-    if (!localQuery || localQuery.length < 1) { setLocalResults([]); return; }
+    if (!localQuery || localQuery.length < 1) return;
     const t = setTimeout(async () => {
       setLocalLoading(true);
       const res = await fetch(`/api/medicines?search=${encodeURIComponent(localQuery)}`);
@@ -63,46 +63,128 @@ export default function StockInPage() {
     return () => clearTimeout(t);
   }, [localQuery]);
 
-  const fillFromExternal = async (result) => {
-    // Check if exists locally
-    const res = await fetch(`/api/medicines?search=${encodeURIComponent(result.name)}`);
-    const data = await res.json();
-    const existing = (data.data || []).find(m =>
-      m.name.toLowerCase() === result.name.toLowerCase() &&
-      (!result.strength || m.strength === result.strength)
-    );
+  const [fetchingDetails, setFetchingDetails] = useState(false);
+  const [autoFilledInfo, setAutoFilledInfo] = useState(null);
 
-    if (existing) {
-      setForm(f => ({
-        ...f, medicine_id: existing.id,
-        name: existing.name, generic_name: existing.generic_name || result.generic_name,
-        manufacturer: existing.manufacturer || result.manufacturer,
-        strength: existing.strength || result.strength,
-        dosage_form: existing.dosage_form || result.dosage_form,
-        unit_type: existing.unit_type, group_id: existing.group_id || '',
-        source_url: existing.source_url || result.source_url,
-        isNew: false,
-      }));
-      show(`Found in local inventory — adding to existing stock`, 'info');
-    } else {
-      setForm(f => ({
-        ...f, medicine_id: '',
-        name: result.name, generic_name: result.generic_name,
-        manufacturer: result.manufacturer, strength: result.strength,
-        dosage_form: result.dosage_form, source_url: result.source_url,
-        isNew: true,
-      }));
+  const fillFromExternal = async (result) => {
+    setFetchingDetails(true);
+    setAutoFilledInfo(null);
+
+    // Initial immediate populate with basic info
+    setForm(f => ({
+      ...f,
+      medicine_id: '',
+      name: result.name || '',
+      generic_name: result.generic_name || '',
+      manufacturer: result.manufacturer || '',
+      strength: result.strength || '',
+      dosage_form: result.dosage_form || '',
+      source_url: result.source_url || '',
+      isNew: true,
+    }));
+
+    try {
+      // 1. Check if exists locally in DB
+      let existing = null;
+      try {
+        const res = await fetch(`/api/medicines?search=${encodeURIComponent(result.name)}`);
+        const data = await res.json();
+        existing = (data.data || []).find(m =>
+          m.name.toLowerCase() === result.name.toLowerCase() &&
+          (!result.strength || m.strength === result.strength)
+        );
+      } catch (err) {
+        console.warn('Local search lookup failed:', err);
+      }
+
+      // If exists locally, pre-populate existing data
+      if (existing) {
+        setForm(f => ({
+          ...f,
+          medicine_id: existing.id,
+          name: existing.name,
+          generic_name: existing.generic_name || result.generic_name || '',
+          manufacturer: existing.manufacturer || result.manufacturer || '',
+          strength: existing.strength || result.strength || '',
+          dosage_form: existing.dosage_form || result.dosage_form || '',
+          unit_type: existing.unit_type || 'strip',
+          group_id: existing.group_id || '',
+          source_url: existing.source_url || result.source_url || '',
+          mrp: existing.mrp ? String(existing.mrp) : '',
+          selling_price: existing.last_selling_price ? String(existing.last_selling_price) : '',
+          cost_price: existing.avg_cost_price ? String(existing.avg_cost_price) : '',
+          isNew: false,
+        }));
+      }
+
+      // 2. Fetch live MedEx details (pricing, therapeutic group, unit type)
+      if (result.source_url) {
+        const extRes = await fetch(
+          `/api/medicines/fetch-external?url=${encodeURIComponent(result.source_url)}&name=${encodeURIComponent(result.name || '')}&generic_name=${encodeURIComponent(result.generic_name || '')}`
+        );
+        const extData = await extRes.json();
+        if (extRes.ok && extData.data) {
+          const d = extData.data;
+
+          setForm(f => ({
+            ...f,
+            // Group: if not set locally or is new, use auto-matched group
+            group_id: (!existing || !f.group_id) && d.group_id ? d.group_id : f.group_id,
+            // Cost price: if new or no cost price yet, auto-fill trade cost price (~88% MRP)
+            cost_price: (!existing || !f.cost_price) && d.cost_price ? String(d.cost_price) : f.cost_price,
+            // Selling price: MRP/unit price
+            selling_price: (!existing || !f.selling_price) && d.selling_price ? String(d.selling_price) : f.selling_price,
+            // MRP
+            mrp: (!existing || !f.mrp) && d.mrp ? String(d.mrp) : f.mrp,
+            // Unit type: strip, bottle, piece
+            unit_type: (!existing) && d.unit_type ? d.unit_type : f.unit_type,
+            dosage_form: f.dosage_form || d.dosage_form || '',
+            strength: f.strength || d.strength || '',
+            manufacturer: f.manufacturer || d.manufacturer || '',
+          }));
+
+          setAutoFilledInfo({
+            group_name: d.group_name,
+            cost_price: d.cost_price,
+            mrp: d.mrp,
+            unit_price: d.unit_price,
+            unit_type: d.unit_type,
+          });
+
+          const summaryParts = [];
+          if (d.group_name) summaryParts.push(`Group: ${d.group_name}`);
+          if (d.cost_price) summaryParts.push(`Cost: ৳${d.cost_price}`);
+          if (d.selling_price) summaryParts.push(`Selling: ৳${d.selling_price}`);
+
+          show(
+            `⚡ Auto-filled: ${summaryParts.join(' · ') || 'MedEx details loaded'}`,
+            'success'
+          );
+        } else if (existing) {
+          show('Found in local inventory — adding to existing stock', 'info');
+        }
+      } else if (existing) {
+        show('Found in local inventory — adding to existing stock', 'info');
+      }
+    } catch (e) {
+      console.error('Error fetching external details:', e);
+      show('Could not fetch MedEx details: ' + e.message, 'warning');
+    } finally {
+      setFetchingDetails(false);
     }
-    window.scrollTo({ top: document.getElementById('stock-form')?.offsetTop - 20, behavior: 'smooth' });
+
+    window.scrollTo({ top: (document.getElementById('stock-form')?.offsetTop || 0) - 20, behavior: 'smooth' });
   };
 
   const fillFromLocal = (med) => {
+    setAutoFilledInfo(null);
     setForm(f => ({
       ...f, medicine_id: med.id,
       name: med.name, generic_name: med.generic_name || '',
       manufacturer: med.manufacturer || '', strength: med.strength || '',
       dosage_form: med.dosage_form || '', unit_type: med.unit_type,
       group_id: med.group_id || '', source_url: med.source_url || '',
+      mrp: med.mrp || '', selling_price: med.last_selling_price || '',
       isNew: false,
     }));
     setLocalQuery(''); setLocalResults([]);
@@ -130,6 +212,7 @@ export default function StockInPage() {
             dosage_form: form.dosage_form, unit_type: form.unit_type,
             group_id: form.group_id || null, source_url: form.source_url,
             mrp: form.mrp ? parseFloat(form.mrp) : null,
+            selling_price: form.selling_price ? parseFloat(form.selling_price) : (form.mrp ? parseFloat(form.mrp) : null),
             avg_cost_price: parseFloat(form.cost_price),
           }),
         });
@@ -165,6 +248,7 @@ export default function StockInPage() {
       }
 
       setSuccessModal({ medicine: data.data.medicine, qty: parseInt(form.quantity) });
+      setAutoFilledInfo(null);
       // Reset form fields (keep group)
       setForm(f => ({ ...f, medicine_id: '', name: '', generic_name: '', manufacturer: '', strength: '', dosage_form: '', source_url: '', cost_price: '', quantity: '', batch_no: '', expiry_date: '', supplier: '', isNew: true }));
     } catch (e) {
@@ -199,7 +283,7 @@ export default function StockInPage() {
               <label className="label">Search existing medicines</label>
               <input
                 type="text" className="input" placeholder="Type medicine name…"
-                value={localQuery} onChange={e => setLocalQuery(e.target.value)}
+                value={localQuery} onChange={e => { setLocalQuery(e.target.value); if (!e.target.value) setLocalResults([]); }}
               />
               {localLoading && <div className="text-xs text-gray-500">Searching…</div>}
               <div className="space-y-1 max-h-72 overflow-y-auto">
@@ -216,7 +300,12 @@ export default function StockInPage() {
 
           {tab === 'external' && (
             <div className="card p-4 space-y-3">
-              <label className="label">Search MedEx (requires internet)</label>
+              <div className="flex items-center justify-between">
+                <label className="label mb-0">Search MedEx (requires internet)</label>
+                <span className="text-[10px] text-brand-400 font-medium bg-brand-900/30 border border-brand-700/30 px-1.5 py-0.5 rounded">
+                  Auto Group & Cost
+                </span>
+              </div>
               <div className="flex gap-2">
                 <input
                   type="text" className="input" placeholder="e.g. Napa, Sergel, Ciprocin…"
@@ -231,9 +320,16 @@ export default function StockInPage() {
               {extFromCache && <p className="text-[10px] text-gray-500">Showing cached results</p>}
               <div className="space-y-1 max-h-80 overflow-y-auto">
                 {extResults.map((r, i) => (
-                  <button key={i} onClick={() => fillFromExternal(r)}
-                    className="w-full text-left p-3 rounded-lg hover:bg-[#1d3021] transition-colors border border-transparent hover:border-[#253d28]">
-                    <div className="text-sm font-medium text-gray-100">{r.name} <span className="text-gray-400 font-normal text-xs">{r.strength}</span></div>
+                  <button key={i} onClick={() => fillFromExternal(r)} disabled={fetchingDetails}
+                    className="w-full text-left p-3 rounded-lg hover:bg-[#1d3021] transition-colors border border-transparent hover:border-[#253d28] group">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="text-sm font-medium text-gray-100 group-hover:text-brand-300 transition-colors">
+                        {r.name} <span className="text-gray-400 font-normal text-xs">{r.strength}</span>
+                      </div>
+                      <span className="text-[10px] text-brand-400/80 bg-brand-950/60 px-1.5 py-0.5 rounded border border-brand-800/40 opacity-80 group-hover:opacity-100">
+                        ⚡ Auto-fill
+                      </span>
+                    </div>
                     <div className="text-xs text-gray-500">{r.generic_name} · {r.manufacturer}</div>
                     <div className="text-[10px] text-gray-600">{r.dosage_form}</div>
                   </button>
@@ -246,8 +342,16 @@ export default function StockInPage() {
         {/* Right: Stock-In form */}
         <div className="xl:col-span-3">
           <form id="stock-form" onSubmit={handleSubmit} className="card p-6 space-y-4">
-            <h2 className="font-semibold text-gray-200 flex items-center gap-2">
-              {form.isNew ? '➕ New Medicine + Stock In' : '📦 Add Stock to Existing Medicine'}
+            <h2 className="font-semibold text-gray-200 flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                {form.isNew ? '➕ New Medicine + Stock In' : '📦 Add Stock to Existing Medicine'}
+              </span>
+              {fetchingDetails && (
+                <span className="text-xs font-normal bg-brand-500/20 text-brand-300 border border-brand-500/30 px-2.5 py-1 rounded-full flex items-center gap-1.5 animate-pulse">
+                  <span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-ping"></span>
+                  Fetching MedEx Group & Cost…
+                </span>
+              )}
             </h2>
 
             {priceWarning && (
@@ -289,6 +393,11 @@ export default function StockInPage() {
                   <option value="">— Select group —</option>
                   {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
                 </select>
+                {autoFilledInfo?.group_name && form.group_id && (
+                  <div className="text-[11px] text-brand-400 flex items-center gap-1 mt-1 font-medium">
+                    ⚡ Auto-matched: {autoFilledInfo.group_name}
+                  </div>
+                )}
               </div>
 
               <div className="col-span-2 border-t border-[#1d3021] pt-3">
@@ -298,6 +407,20 @@ export default function StockInPage() {
               <div>
                 <label className="label">Cost Price / Unit (৳) *</label>
                 <input required type="number" step="0.01" min="0" className="input" value={form.cost_price} onChange={e => setF('cost_price', e.target.value)} placeholder="0.00" />
+                {autoFilledInfo?.cost_price && form.cost_price && (
+                  <div className="text-[11px] text-brand-400 flex items-center gap-1 mt-1 font-medium">
+                    ⚡ Auto-filled trade cost (~88% of MedEx MRP ৳{autoFilledInfo.mrp || autoFilledInfo.unit_price})
+                  </div>
+                )}
+              </div>
+              <div>
+                <label className="label">Selling Price / Unit (৳)</label>
+                <input type="number" step="0.01" min="0" className="input" value={form.selling_price} onChange={e => setF('selling_price', e.target.value)} placeholder="Optional" />
+                {autoFilledInfo?.selling_price && form.selling_price && (
+                  <div className="text-[11px] text-gray-400 flex items-center gap-1 mt-1">
+                    ⚡ Retail MRP from MedEx: ৳{autoFilledInfo.selling_price}
+                  </div>
+                )}
               </div>
               <div>
                 <label className="label">Quantity *</label>

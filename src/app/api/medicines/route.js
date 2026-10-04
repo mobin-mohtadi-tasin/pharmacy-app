@@ -48,6 +48,8 @@ export async function POST(req) {
     `).get(name.trim(), strength || null, manufacturer || null);
     if (existing) return err('A medicine with this name, strength, and manufacturer already exists', 409);
 
+    const finalSellingPrice = last_selling_price != null && last_selling_price !== '' ? Number(last_selling_price) : (body.selling_price != null && body.selling_price !== '' ? Number(body.selling_price) : null);
+
     const result = db.prepare(`
       INSERT INTO medicines (name, generic_name, manufacturer, strength, dosage_form, unit_type, group_id, source_url, mrp, avg_cost_price, last_selling_price, low_stock_threshold)
       VALUES (@name, @generic_name, @manufacturer, @strength, @dosage_form, @unit_type, @group_id, @source_url, @mrp, @avg_cost_price, @last_selling_price, @low_stock_threshold)
@@ -56,7 +58,7 @@ export async function POST(req) {
       strength: strength || null, dosage_form: dosage_form || null,
       unit_type: unit_type || 'strip', group_id: group_id || null,
       source_url: source_url || null, mrp: mrp || null,
-      avg_cost_price: avg_cost_price || 0, last_selling_price: last_selling_price || null,
+      avg_cost_price: avg_cost_price || 0, last_selling_price: finalSellingPrice,
       low_stock_threshold: low_stock_threshold || 10,
     });
 

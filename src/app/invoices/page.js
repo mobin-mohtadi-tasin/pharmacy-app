@@ -15,19 +15,23 @@ export default function InvoicesPage() {
   const [page, setPage] = useState(1);
   const LIMIT = 30;
 
-  const load = async () => {
-    setLoading(true);
-    const params = new URLSearchParams({ page, limit: LIMIT });
-    if (from) params.set('from', from);
-    if (to) params.set('to', to);
-    const res = await fetch(`/api/invoices?${params}`);
-    const data = await res.json();
-    setInvoices(data.data?.invoices || []);
-    setTotal(data.data?.total || 0);
-    setLoading(false);
-  };
-
-  useEffect(() => { load(); }, [from, to, page]);
+  useEffect(() => {
+    let ignore = false;
+    const fetchInvoices = async () => {
+      const params = new URLSearchParams({ page, limit: LIMIT });
+      if (from) params.set('from', from);
+      if (to) params.set('to', to);
+      const res = await fetch(`/api/invoices?${params}`);
+      const data = await res.json();
+      if (!ignore) {
+        setInvoices(data.data?.invoices || []);
+        setTotal(data.data?.total || 0);
+        setLoading(false);
+      }
+    };
+    fetchInvoices();
+    return () => { ignore = true; };
+  }, [from, to, page]);
 
   const totalPages = Math.ceil(total / LIMIT);
 
@@ -61,20 +65,30 @@ export default function InvoicesPage() {
               <th>Invoice No</th>
               <th>Date</th>
               <th>Payment</th>
-              <th>Amount</th>
+              <th>Subtotal</th>
+              <th>Discount</th>
+              <th>Total</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={5} className="text-center py-12 text-gray-500">Loading…</td></tr>
+              <tr><td colSpan={7} className="text-center py-12 text-gray-500">Loading…</td></tr>
             ) : invoices.length === 0 ? (
-              <tr><td colSpan={5} className="text-center py-12 text-gray-500">No invoices found</td></tr>
+              <tr><td colSpan={7} className="text-center py-12 text-gray-500">No invoices found</td></tr>
             ) : invoices.map(inv => (
               <tr key={inv.id}>
                 <td className="font-mono text-sm text-gray-200">{inv.invoice_no}</td>
                 <td className="text-gray-400">{inv.date}</td>
                 <td><span className={PAYMENT_COLORS[inv.payment_method] || 'badge'}>{inv.payment_method}</span></td>
+                <td className="text-gray-300">৳{Number(inv.subtotal || inv.total_amount).toFixed(2)}</td>
+                <td>
+                  {inv.discount_percent > 0 ? (
+                    <span className="badge-yellow">-{inv.discount_percent}% (-৳{Number(inv.discount_amount).toFixed(2)})</span>
+                  ) : (
+                    <span className="text-gray-600">—</span>
+                  )}
+                </td>
                 <td className="font-semibold text-brand-400">৳{Number(inv.total_amount).toFixed(2)}</td>
                 <td>
                   <Link href={`/invoices/${inv.id}`} className="btn-secondary btn-sm">View</Link>

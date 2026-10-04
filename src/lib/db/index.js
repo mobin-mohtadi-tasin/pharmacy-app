@@ -67,6 +67,9 @@ function initSchema(db) {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       invoice_no TEXT NOT NULL UNIQUE,
       date TEXT DEFAULT (date('now')),
+      subtotal REAL NOT NULL DEFAULT 0,
+      discount_percent REAL NOT NULL DEFAULT 0,
+      discount_amount REAL NOT NULL DEFAULT 0,
       total_amount REAL NOT NULL DEFAULT 0,
       payment_method TEXT NOT NULL DEFAULT 'Cash',
       notes TEXT,
@@ -102,6 +105,12 @@ function initSchema(db) {
     CREATE INDEX IF NOT EXISTS idx_stock_ins_medicine ON stock_ins(medicine_id);
     CREATE INDEX IF NOT EXISTS idx_cache_query ON medicine_search_cache(query);
   `);
+
+  // Safe migrations for discount columns
+  try { db.exec(`ALTER TABLE invoices ADD COLUMN subtotal REAL NOT NULL DEFAULT 0;`); } catch {}
+  try { db.exec(`ALTER TABLE invoices ADD COLUMN discount_percent REAL NOT NULL DEFAULT 0;`); } catch {}
+  try { db.exec(`ALTER TABLE invoices ADD COLUMN discount_amount REAL NOT NULL DEFAULT 0;`); } catch {}
+  try { db.exec(`UPDATE invoices SET subtotal = total_amount WHERE subtotal = 0 AND total_amount > 0;`); } catch {}
 }
 
 export default getDb;

@@ -3,7 +3,14 @@
 export default function InvoiceReceipt({ invoice, items }) {
   if (!invoice) return null;
 
-  const total = items.reduce((s, i) => s + i.quantity * i.selling_price, 0);
+  const subtotal = invoice.subtotal != null && Number(invoice.subtotal) > 0
+    ? Number(invoice.subtotal)
+    : items.reduce((s, i) => s + i.quantity * i.selling_price, 0);
+  const discountPercent = Number(invoice.discount_percent || 0);
+  const discountAmount = Number(invoice.discount_amount || (subtotal * discountPercent / 100));
+  const finalTotal = invoice.total_amount != null
+    ? Number(invoice.total_amount)
+    : Math.max(0, subtotal - discountAmount);
 
   const handlePrint = () => window.print();
 
@@ -52,10 +59,24 @@ export default function InvoiceReceipt({ invoice, items }) {
           </tbody>
         </table>
 
-        {/* Total */}
-        <div className="border-t border-dashed border-gray-600 pt-3 flex justify-between items-center">
-          <span className="font-bold text-gray-300">TOTAL</span>
-          <span className="text-lg font-bold text-brand-400">৳{total.toFixed(2)}</span>
+        {/* Total & Discount */}
+        <div className="border-t border-dashed border-gray-600 pt-3 space-y-1">
+          {discountPercent > 0 && (
+            <>
+              <div className="flex justify-between items-center text-gray-400">
+                <span>Subtotal</span>
+                <span>৳{subtotal.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between items-center text-yellow-400">
+                <span>Discount ({discountPercent}%)</span>
+                <span>-৳{discountAmount.toFixed(2)}</span>
+              </div>
+            </>
+          )}
+          <div className="flex justify-between items-center pt-1 border-t border-dashed border-gray-700">
+            <span className="font-bold text-gray-300">TOTAL</span>
+            <span className="text-lg font-bold text-brand-400">৳{finalTotal.toFixed(2)}</span>
+          </div>
         </div>
 
         <div className="text-center mt-4 text-[10px] text-gray-600 border-t border-dashed border-gray-700 pt-3">

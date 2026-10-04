@@ -44,7 +44,7 @@ export async function GET(req) {
 
   const stock = db.prepare(`
     SELECT m.name, m.strength, m.dosage_form, m.unit_type, g.name as group_name,
-           m.current_stock, m.avg_cost_price, m.low_stock_threshold
+           m.current_stock, m.avg_cost_price, m.last_selling_price, m.low_stock_threshold
     FROM medicines m LEFT JOIN groups g ON g.id = m.group_id ORDER BY m.name
   `).all();
 
@@ -140,6 +140,7 @@ export async function GET(req) {
     { header: 'Unit', key: 'unit_type', width: 10 },
     { header: 'Stock', key: 'current_stock', width: 10 },
     { header: 'Avg Cost', key: 'avg_cost_price', width: 12 },
+    { header: 'Selling Price', key: 'last_selling_price', width: 14 },
     { header: 'Low Stock?', key: 'low', width: 12 },
   ];
   ws4.getRow(1).eachCell(cell => Object.assign(cell, headerStyle));
@@ -148,8 +149,9 @@ export async function GET(req) {
     const isLow = med.current_stock <= med.low_stock_threshold;
     const row = ws4.addRow({ ...med, low: isLow ? 'YES ⚠️' : 'No' });
     row.getCell(7).numFmt = currencyFmt;
+    row.getCell(8).numFmt = currencyFmt;
     if (isLow) {
-      row.getCell(8).font = { bold: true, color: { argb: 'FFDC2626' } };
+      row.getCell(9).font = { bold: true, color: { argb: 'FFDC2626' } };
       row.getCell(6).font = { bold: true, color: { argb: 'FFDC2626' } };
     }
   });
