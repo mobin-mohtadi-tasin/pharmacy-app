@@ -267,14 +267,14 @@ export default function StockInPage() {
         {/* Left: Medicine search */}
         <div className="xl:col-span-2 space-y-4">
           {/* Tab switch */}
-          <div className="flex rounded-lg overflow-hidden border border-[#253d28]">
+          <div className="flex gap-1 p-1 rounded-xl bg-white border border-slate-200 shadow-sm">
             <button
               onClick={() => setTab('local')}
-              className={`flex-1 py-2.5 text-sm font-medium transition-colors ${tab === 'local' ? 'bg-brand-600 text-white' : 'bg-[#131f17] text-gray-400 hover:text-gray-200'}`}
+              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${tab === 'local' ? 'bg-gradient-to-r from-sky-500 to-blue-500 text-white shadow-md shadow-sky-500/30' : 'text-slate-500 hover:text-sky-700 hover:bg-sky-50'}`}
             >📦 Local Inventory</button>
             <button
               onClick={() => setTab('external')}
-              className={`flex-1 py-2.5 text-sm font-medium transition-colors ${tab === 'external' ? 'bg-brand-600 text-white' : 'bg-[#131f17] text-gray-400 hover:text-gray-200'}`}
+              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${tab === 'external' ? 'bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white shadow-md shadow-violet-500/30' : 'text-slate-500 hover:text-violet-700 hover:bg-violet-50'}`}
             >🌐 Search MedEx</button>
           </div>
 
@@ -285,13 +285,13 @@ export default function StockInPage() {
                 type="text" className="input" placeholder="Type medicine name…"
                 value={localQuery} onChange={e => { setLocalQuery(e.target.value); if (!e.target.value) setLocalResults([]); }}
               />
-              {localLoading && <div className="text-xs text-gray-500">Searching…</div>}
+              {localLoading && <div className="text-xs text-slate-500">Searching…</div>}
               <div className="space-y-1 max-h-72 overflow-y-auto">
                 {localResults.map(med => (
                   <button key={med.id} onClick={() => fillFromLocal(med)}
-                    className="w-full text-left p-3 rounded-lg hover:bg-[#1d3021] transition-colors border border-transparent hover:border-[#253d28]">
-                    <div className="text-sm font-medium text-gray-100">{med.name} {med.strength && <span className="text-gray-400 font-normal">{med.strength}</span>}</div>
-                    <div className="text-xs text-gray-500">Stock: {med.current_stock} · Avg cost: ৳{Number(med.avg_cost_price).toFixed(2)}</div>
+                    className="w-full text-left p-3 rounded-lg hover:bg-sky-50 transition-colors border border-transparent hover:border-sky-200">
+                    <div className="text-sm font-medium text-slate-800">{med.name} {med.strength && <span className="text-slate-500 font-normal">{med.strength}</span>}</div>
+                    <div className="text-xs text-slate-500">Stock: {med.current_stock} · Avg cost: ৳{Number(med.avg_cost_price).toFixed(2)}</div>
                   </button>
                 ))}
               </div>
@@ -302,7 +302,7 @@ export default function StockInPage() {
             <div className="card p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <label className="label mb-0">Search MedEx (requires internet)</label>
-                <span className="text-[10px] text-brand-400 font-medium bg-brand-900/30 border border-brand-700/30 px-1.5 py-0.5 rounded">
+                <span className="text-[10px] text-brand-600 font-medium bg-brand-50 border border-brand-200 px-1.5 py-0.5 rounded">
                   Auto Group & Cost
                 </span>
               </div>
@@ -312,26 +312,26 @@ export default function StockInPage() {
                   value={extQuery} onChange={e => setExtQuery(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && searchExternal()}
                 />
-                <button onClick={searchExternal} disabled={extLoading} className="btn-primary px-4">
+                <button onClick={searchExternal} disabled={extLoading} className="btn-violet px-4">
                   {extLoading ? '…' : '🔍'}
                 </button>
               </div>
-              {extError && <p className="text-xs text-yellow-400 bg-yellow-900/20 p-2 rounded">⚠ {extError}</p>}
-              {extFromCache && <p className="text-[10px] text-gray-500">Showing cached results</p>}
+              {extError && <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded">⚠ {extError}</p>}
+              {extFromCache && <p className="text-[10px] text-slate-500">Showing cached results</p>}
               <div className="space-y-1 max-h-80 overflow-y-auto">
                 {extResults.map((r, i) => (
                   <button key={i} onClick={() => fillFromExternal(r)} disabled={fetchingDetails}
-                    className="w-full text-left p-3 rounded-lg hover:bg-[#1d3021] transition-colors border border-transparent hover:border-[#253d28] group">
+                    className="w-full text-left p-3 rounded-lg hover:bg-violet-50 transition-colors border border-transparent hover:border-violet-200 group">
                     <div className="flex items-start justify-between gap-2">
-                      <div className="text-sm font-medium text-gray-100 group-hover:text-brand-300 transition-colors">
-                        {r.name} <span className="text-gray-400 font-normal text-xs">{r.strength}</span>
+                      <div className="text-sm font-medium text-slate-800 group-hover:text-violet-700 transition-colors">
+                        {r.name} <span className="text-slate-500 font-normal text-xs">{r.strength}</span>
                       </div>
-                      <span className="text-[10px] text-brand-400/80 bg-brand-950/60 px-1.5 py-0.5 rounded border border-brand-800/40 opacity-80 group-hover:opacity-100">
+                      <span className="text-[10px] text-violet-700 bg-violet-50 px-1.5 py-0.5 rounded border border-violet-200 opacity-80 group-hover:opacity-100">
                         ⚡ Auto-fill
                       </span>
                     </div>
-                    <div className="text-xs text-gray-500">{r.generic_name} · {r.manufacturer}</div>
-                    <div className="text-[10px] text-gray-600">{r.dosage_form}</div>
+                    <div className="text-xs text-slate-500">{r.generic_name} · {r.manufacturer}</div>
+                    <div className="text-[10px] text-slate-400">{r.dosage_form}</div>
                   </button>
                 ))}
               </div>
@@ -342,12 +342,12 @@ export default function StockInPage() {
         {/* Right: Stock-In form */}
         <div className="xl:col-span-3">
           <form id="stock-form" onSubmit={handleSubmit} className="card p-6 space-y-4">
-            <h2 className="font-semibold text-gray-200 flex items-center justify-between">
+            <h2 className="font-semibold text-slate-700 flex items-center justify-between">
               <span className="flex items-center gap-2">
                 {form.isNew ? '➕ New Medicine + Stock In' : '📦 Add Stock to Existing Medicine'}
               </span>
               {fetchingDetails && (
-                <span className="text-xs font-normal bg-brand-500/20 text-brand-300 border border-brand-500/30 px-2.5 py-1 rounded-full flex items-center gap-1.5 animate-pulse">
+                <span className="text-xs font-normal bg-brand-50 text-brand-700 border border-brand-500/30 px-2.5 py-1 rounded-full flex items-center gap-1.5 animate-pulse">
                   <span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-ping"></span>
                   Fetching MedEx Group & Cost…
                 </span>
@@ -355,7 +355,7 @@ export default function StockInPage() {
             </h2>
 
             {priceWarning && (
-              <div className="bg-yellow-900/20 border border-yellow-700/40 rounded-lg p-3 text-xs text-yellow-300">
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-600">
                 ⚠ Cost price changed significantly: Old avg ৳{Number(priceWarning.old).toFixed(2)} → New avg ৳{Number(priceWarning.new).toFixed(2)}
               </div>
             )}
@@ -394,21 +394,21 @@ export default function StockInPage() {
                   {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
                 </select>
                 {autoFilledInfo?.group_name && form.group_id && (
-                  <div className="text-[11px] text-brand-400 flex items-center gap-1 mt-1 font-medium">
+                  <div className="text-[11px] text-brand-600 flex items-center gap-1 mt-1 font-medium">
                     ⚡ Auto-matched: {autoFilledInfo.group_name}
                   </div>
                 )}
               </div>
 
-              <div className="col-span-2 border-t border-[#1d3021] pt-3">
-                <p className="text-xs text-gray-500 mb-3 font-medium uppercase tracking-wide">Stock-In Details</p>
+              <div className="col-span-2 border-t border-slate-200 pt-3">
+                <p className="text-xs text-slate-500 mb-3 font-medium uppercase tracking-wide">Stock-In Details</p>
               </div>
 
               <div>
                 <label className="label">Cost Price / Unit (৳) *</label>
                 <input required type="number" step="0.01" min="0" className="input" value={form.cost_price} onChange={e => setF('cost_price', e.target.value)} placeholder="0.00" />
                 {autoFilledInfo?.cost_price && form.cost_price && (
-                  <div className="text-[11px] text-brand-400 flex items-center gap-1 mt-1 font-medium">
+                  <div className="text-[11px] text-brand-600 flex items-center gap-1 mt-1 font-medium">
                     ⚡ Auto-filled trade cost (~88% of MedEx MRP ৳{autoFilledInfo.mrp || autoFilledInfo.unit_price})
                   </div>
                 )}
@@ -417,7 +417,7 @@ export default function StockInPage() {
                 <label className="label">Selling Price / Unit (৳)</label>
                 <input type="number" step="0.01" min="0" className="input" value={form.selling_price} onChange={e => setF('selling_price', e.target.value)} placeholder="Optional" />
                 {autoFilledInfo?.selling_price && form.selling_price && (
-                  <div className="text-[11px] text-gray-400 flex items-center gap-1 mt-1">
+                  <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-1">
                     ⚡ Retail MRP from MedEx: ৳{autoFilledInfo.selling_price}
                   </div>
                 )}
@@ -449,7 +449,7 @@ export default function StockInPage() {
               {form.source_url && (
                 <div className="col-span-2">
                   <label className="label">Source URL</label>
-                  <a href={form.source_url} target="_blank" rel="noopener noreferrer" className="text-xs text-brand-400 hover:underline break-all">{form.source_url} ↗</a>
+                  <a href={form.source_url} target="_blank" rel="noopener noreferrer" className="text-xs text-brand-600 hover:underline break-all">{form.source_url} ↗</a>
                 </div>
               )}
             </div>
@@ -465,9 +465,9 @@ export default function StockInPage() {
         {successModal && (
           <div className="text-center space-y-3">
             <div className="text-5xl">✅</div>
-            <p className="text-lg font-semibold text-white">{successModal.medicine.name}</p>
-            <p className="text-gray-400 text-sm">{successModal.qty} units added</p>
-            <p className="text-brand-400 font-medium">New stock: {successModal.medicine.current_stock}</p>
+            <p className="text-lg font-semibold text-slate-800">{successModal.medicine.name}</p>
+            <p className="text-slate-500 text-sm">{successModal.qty} units added</p>
+            <p className="text-brand-600 font-medium">New stock: {successModal.medicine.current_stock}</p>
             <button onClick={() => setSuccessModal(null)} className="btn-primary w-full justify-center mt-4">Done</button>
           </div>
         )}

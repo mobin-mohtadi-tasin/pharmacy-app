@@ -67,7 +67,7 @@ export default function MedicineSearch({ onSelect, placeholder = 'Search medicin
   return (
     <div className={`relative ${className}`}>
       <div className="relative group">
-        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm transition-all duration-300 group-focus-within:text-brand-400 group-focus-within:scale-110">⌕</span>
+        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm transition-all duration-300 group-focus-within:text-brand-600 group-focus-within:scale-110">⌕</span>
         <input
           ref={inputRef}
           type="text"
@@ -87,27 +87,27 @@ export default function MedicineSearch({ onSelect, placeholder = 'Search medicin
       </div>
 
       {open && results.length > 0 && (
-        <div className="absolute z-40 w-full mt-1 bg-[#0f1812]/95 backdrop-blur-md border border-[#253d28] rounded-xl shadow-2xl shadow-black/60 overflow-hidden max-h-72 overflow-y-auto origin-top animate-scale-in">
+        <div className="absolute z-40 w-full mt-1 bg-white/95 backdrop-blur-md border border-slate-200 rounded-xl shadow-2xl shadow-slate-900/10 overflow-hidden max-h-72 overflow-y-auto origin-top animate-scale-in">
           {results.map((med, i) => (
             <button
               key={med.id}
               onMouseDown={() => handleSelect(med)}
               onMouseEnter={() => setActiveIdx(i)}
               style={{ animation: `row-in 0.3s cubic-bezier(0.16,1,0.3,1) ${Math.min(i, 10) * 30}ms backwards` }}
-              className={`relative w-full text-left px-4 py-2.5 flex items-start gap-3 transition-all duration-200 ${i === activeIdx ? 'bg-brand-600/20 text-brand-300 pl-5 shadow-[inset_3px_0_0_#22c55e]' : 'text-gray-200'}`}
+              className={`relative w-full text-left px-4 py-2.5 flex items-start gap-3 transition-all duration-200 ${i === activeIdx ? 'bg-brand-50 text-brand-700 pl-5 shadow-[inset_3px_0_0_#22c55e]' : 'text-slate-700'}`}
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="font-medium text-sm truncate">{med.name}</span>
-                  {med.strength && <span className="text-xs text-gray-400 shrink-0">{med.strength}</span>}
+                  {med.strength && <span className="text-xs text-slate-500 shrink-0">{med.strength}</span>}
                 </div>
-                <div className="text-xs text-gray-500 flex gap-2 mt-0.5">
+                <div className="text-xs text-slate-500 flex gap-2 mt-0.5">
                   {med.generic_name && <span>{med.generic_name}</span>}
                   {med.group_name && <span className="text-brand-600">· {med.group_name}</span>}
                 </div>
               </div>
               <div className="text-right shrink-0">
-                <span className={`text-xs font-medium ${med.current_stock <= med.low_stock_threshold ? 'text-red-400' : 'text-gray-400'}`}>
+                <span className={`text-xs font-medium ${med.current_stock <= med.low_stock_threshold ? 'text-red-600' : 'text-slate-500'}`}>
                   Stock: {med.current_stock}
                 </span>
               </div>
@@ -117,7 +117,7 @@ export default function MedicineSearch({ onSelect, placeholder = 'Search medicin
       )}
 
       {open && query.length >= 1 && results.length === 0 && !loading && (
-        <div className="absolute z-40 w-full mt-1 bg-[#0f1812] border border-[#253d28] rounded-xl shadow-2xl px-4 py-3 text-sm text-gray-500 origin-top animate-scale-in">
+        <div className="absolute z-40 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl px-4 py-3 text-sm text-slate-500 origin-top animate-scale-in">
           🔍 No medicines found for &ldquo;{query}&rdquo;
         </div>
       )}

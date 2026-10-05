@@ -13,21 +13,21 @@ export default function Toast({ message, type = 'success', onClose, id }) {
   if (!message) return null;
 
   const colors = {
-    success: 'bg-brand-900/90 border-brand-600/50 text-brand-200',
-    error: 'bg-red-900/90 border-red-600/50 text-red-200',
-    warning: 'bg-yellow-900/90 border-yellow-600/50 text-yellow-200',
-    info: 'bg-blue-900/90 border-blue-600/50 text-blue-200',
+    success: 'bg-emerald-50/95 border-emerald-200 text-emerald-800',
+    error: 'bg-rose-50/95 border-rose-200 text-rose-800',
+    warning: 'bg-amber-50/95 border-amber-200 text-amber-800',
+    info: 'bg-sky-50/95 border-sky-200 text-sky-800',
   };
-  const bars = { success: 'bg-brand-400', error: 'bg-red-400', warning: 'bg-yellow-400', info: 'bg-blue-400' };
+  const bars = { success: 'bg-emerald-400', error: 'bg-rose-400', warning: 'bg-amber-400', info: 'bg-sky-400' };
   const icons = { success: '✓', error: '✕', warning: '⚠', info: 'ℹ' };
 
   return (
     <div
       key={id}
       role="status"
-      className={`fixed top-4 right-4 z-[60] overflow-hidden flex items-center gap-3 pl-3 pr-4 py-3 rounded-xl border backdrop-blur-md shadow-2xl shadow-black/50 text-sm font-medium animate-slide-in-right hover:scale-[1.02] transition-transform ${colors[type]}`}
+      className={`fixed top-4 right-4 z-[60] overflow-hidden flex items-center gap-3 pl-3 pr-4 py-3 rounded-xl border backdrop-blur-md shadow-2xl shadow-slate-900/10 text-sm font-medium animate-slide-in-right hover:scale-[1.02] transition-transform ${colors[type]}`}
     >
-      <span className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-sm animate-pop">{icons[type]}</span>
+      <span className="w-6 h-6 rounded-full bg-white/70 flex items-center justify-center text-sm animate-pop">{icons[type]}</span>
       <span>{message}</span>
       <button onClick={onClose} aria-label="Dismiss" className="ml-2 opacity-60 hover:opacity-100 hover:rotate-90 transition-all text-lg leading-none">×</button>
       {/* Countdown bar */}

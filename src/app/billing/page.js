@@ -11,6 +11,15 @@ const money = (n) => n.toFixed(2);
 
 const PAYMENT_METHODS = ['Cash', 'Card', 'bKash', 'Nagad', 'Bank Transfer'];
 
+// Distinct color per payment method (selected state)
+const PAYMENT_STYLES = {
+  Cash: 'bg-emerald-50 border-emerald-400 text-emerald-700 shadow-[0_4px_14px_-4px_rgb(16_185_129/0.45)]',
+  Card: 'bg-indigo-50 border-indigo-400 text-indigo-700 shadow-[0_4px_14px_-4px_rgb(99_102_241/0.45)]',
+  bKash: 'bg-pink-50 border-pink-400 text-pink-700 shadow-[0_4px_14px_-4px_rgb(236_72_153/0.45)]',
+  Nagad: 'bg-orange-50 border-orange-400 text-orange-700 shadow-[0_4px_14px_-4px_rgb(249_115_22/0.45)]',
+  'Bank Transfer': 'bg-sky-50 border-sky-400 text-sky-700 shadow-[0_4px_14px_-4px_rgb(14_165_233/0.45)]',
+};
+
 function CartRow({ item, index, onUpdate, onRemove }) {
   const total = (item.quantity * item.selling_price).toFixed(2);
   const profit = ((item.selling_price - item.cost_price_snapshot) * item.quantity).toFixed(2);
@@ -18,17 +27,17 @@ function CartRow({ item, index, onUpdate, onRemove }) {
   const overStock = item.quantity > maxStock;
 
   return (
-    <tr className={`border-t border-[#1d3021] transition-colors duration-200 animate-fade-up ${overStock ? 'bg-red-900/10' : 'hover:bg-[#131f17] hover:shadow-[inset_3px_0_0_#22c55e]'}`}>
+    <tr className={`border-t border-slate-200 transition-colors duration-200 animate-fade-up ${overStock ? 'bg-red-50' : 'hover:bg-slate-50 hover:shadow-[inset_3px_0_0_#22c55e]'}`}>
       <td className="px-4 py-3">
-        <div className="font-medium text-gray-100">{item.name}</div>
-        <div className="text-xs text-gray-500">{item.strength} {item.dosage_form && `· ${item.dosage_form}`}</div>
-        <div className="text-xs text-gray-600">Stock: {item.current_stock}</div>
+        <div className="font-medium text-slate-800">{item.name}</div>
+        <div className="text-xs text-slate-500">{item.strength} {item.dosage_form && `· ${item.dosage_form}`}</div>
+        <div className="text-xs text-slate-400">Stock: {item.current_stock}</div>
       </td>
       <td className="px-3 py-3">
         <div className="flex items-center gap-1">
           <button
             onClick={() => onUpdate(index, 'quantity', Math.max(1, item.quantity - 1))}
-            className="w-6 h-6 flex items-center justify-center rounded bg-[#253d28] hover:bg-brand-700 hover:scale-110 active:scale-90 transition-transform text-white text-sm"
+            className="w-6 h-6 flex items-center justify-center rounded bg-indigo-50 border border-indigo-200 hover:bg-indigo-500 hover:text-white hover:scale-110 active:scale-90 transition-all text-indigo-700 text-sm"
           >−</button>
           <input
             type="number" min="1" max={item.current_stock}
@@ -38,16 +47,16 @@ function CartRow({ item, index, onUpdate, onRemove }) {
           />
           <button
             onClick={() => onUpdate(index, 'quantity', item.quantity + 1)}
-            className="w-6 h-6 flex items-center justify-center rounded bg-[#253d28] hover:bg-brand-700 hover:scale-110 active:scale-90 transition-transform text-white text-sm"
+            className="w-6 h-6 flex items-center justify-center rounded bg-indigo-50 border border-indigo-200 hover:bg-indigo-500 hover:text-white hover:scale-110 active:scale-90 transition-all text-indigo-700 text-sm"
           >+</button>
         </div>
         {item.quantity > item.current_stock && (
-          <p className="text-xs text-red-400 mt-1">⚠ Exceeds stock ({item.current_stock})</p>
+          <p className="text-xs text-red-600 mt-1">⚠ Exceeds stock ({item.current_stock})</p>
         )}
       </td>
       <td className="px-3 py-3">
         <div className="flex items-center gap-1">
-          <span className="text-gray-400 text-sm">৳</span>
+          <span className="text-slate-500 text-sm">৳</span>
           <input
             type="number" min="0" step="0.5"
             value={item.selling_price}
@@ -57,11 +66,11 @@ function CartRow({ item, index, onUpdate, onRemove }) {
         </div>
       </td>
       <td className="px-3 py-3 text-right">
-        <div key={total} className="text-gray-100 font-medium inline-block animate-pop">৳{total}</div>
+        <div key={total} className="text-slate-800 font-medium inline-block animate-pop">৳{total}</div>
         <div className="text-xs text-brand-500">+৳{profit}</div>
       </td>
       <td className="px-3 py-3">
-        <button onClick={() => onRemove(index)} aria-label="Remove item" className="text-red-400 hover:text-red-300 hover:rotate-90 hover:scale-125 transition-transform duration-300 text-lg px-2">×</button>
+        <button onClick={() => onRemove(index)} aria-label="Remove item" className="text-red-600 hover:text-red-700 hover:rotate-90 hover:scale-125 transition-transform duration-300 text-lg px-2">×</button>
       </td>
     </tr>
   );
@@ -181,7 +190,7 @@ export default function BillingPage() {
       <div className="page-header">
         <div>
           <h1 className="page-title">Billing / Point of Sale</h1>
-          <p className="text-xs text-gray-500 mt-1">Press <kbd className="px-1.5 py-0.5 bg-[#1d3021] rounded text-gray-300 font-mono">/</kbd> to search · <kbd className="px-1.5 py-0.5 bg-[#1d3021] rounded text-gray-300 font-mono">F2</kbd> to checkout</p>
+          <p className="text-xs text-slate-500 mt-1">Press <kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-mono">/</kbd> to search · <kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-mono">F2</kbd> to checkout</p>
         </div>
       </div>
 
@@ -219,7 +228,7 @@ export default function BillingPage() {
           {/* Cart table */}
           <div className="card">
             {cart.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-gray-500 animate-fade-in">
+              <div className="flex flex-col items-center justify-center py-16 text-slate-500 animate-fade-in">
                 <span className="text-5xl mb-3 inline-block animate-float drop-shadow-[0_8px_16px_rgb(34_197_94/0.25)]">🛒</span>
                 <p className="text-sm">Cart is empty</p>
                 <p className="text-xs mt-1">Search and add medicines above</p>
@@ -227,7 +236,7 @@ export default function BillingPage() {
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="bg-[#131f17] text-gray-400 text-xs uppercase tracking-wide">
+                  <thead className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wide">
                     <tr>
                       <th className="px-4 py-3 text-left">Medicine</th>
                       <th className="px-3 py-3 text-left w-36">Quantity</th>
@@ -250,7 +259,7 @@ export default function BillingPage() {
         {/* Right: Order summary + checkout */}
         <div className="space-y-4">
           <div className="card p-5 space-y-4">
-            <h2 className="font-semibold text-gray-200">Order Summary</h2>
+            <h2 className="font-semibold text-slate-700">Order Summary</h2>
 
             {/* Payment method */}
             <div>
@@ -262,8 +271,8 @@ export default function BillingPage() {
                     onClick={() => setPaymentMethod(m)}
                     className={`py-2 px-3 rounded-lg text-sm font-medium border transition-all duration-300 hover:-translate-y-0.5 active:scale-95 ${
                       paymentMethod === m
-                        ? 'bg-brand-600/20 border-brand-500/60 text-brand-300 shadow-[0_0_16px_-4px_rgb(34_197_94/0.5)] animate-pop'
-                        : 'bg-[#131f17] border-[#253d28] text-gray-400 hover:border-brand-700 hover:text-gray-200'
+                        ? `${PAYMENT_STYLES[m]} animate-pop`
+                        : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700'
                     }`}
                   >
                     {m === 'Cash' ? '💵' : m === 'Card' ? '💳' : m === 'bKash' ? '📱' : m === 'Nagad' ? '📲' : '🏦'} {m}
@@ -273,13 +282,13 @@ export default function BillingPage() {
             </div>
 
             {/* Discount Segment */}
-            <div className="border-t border-[#1d3021] pt-3">
+            <div className="border-t border-slate-200 pt-3">
               <div className="flex items-center justify-between mb-2">
-                <label className="label mb-0 flex items-center gap-1.5 text-gray-300">
+                <label className="label mb-0 flex items-center gap-1.5 text-slate-600">
                   <span>🏷️</span> Overall Discount (%)
                 </label>
                 {discountPercent > 0 && (
-                  <span className="text-xs text-yellow-400 font-medium">
+                  <span className="text-xs text-amber-600 font-medium">
                     -৳{discountAmount.toFixed(2)} off
                   </span>
                 )}
@@ -298,15 +307,15 @@ export default function BillingPage() {
                       else setDiscountPercent(Math.min(100, Math.max(0, val)));
                     }}
                     placeholder="0"
-                    className="input pr-8 text-right font-semibold text-yellow-400"
+                    className="input pr-8 text-right font-semibold text-amber-600"
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 font-bold text-sm pointer-events-none">%</span>
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-sm pointer-events-none">%</span>
                 </div>
                 {discountPercent > 0 && (
                   <button
                     type="button"
                     onClick={() => setDiscountPercent(0)}
-                    className="btn-secondary btn-sm px-2 text-xs text-gray-400 hover:text-red-400"
+                    className="btn-secondary btn-sm px-2 text-xs text-slate-500 hover:text-red-600"
                     title="Reset discount to 0%"
                   >
                     ✕
@@ -315,52 +324,52 @@ export default function BillingPage() {
               </div>
 
               {/* Quick preset percentage chips */}
-              <div className="flex gap-1.5 mt-2">
-                {[0, 5, 7.5, 10, 15].map(pct => (
+              <div className="flex gap-2 mt-2">
+                {[2, 5].map(pct => (
                   <button
                     key={pct}
                     type="button"
-                    onClick={() => setDiscountPercent(pct)}
-                    className={`flex-1 py-1 text-xs rounded-md border transition-all duration-200 ${
+                    onClick={() => setDiscountPercent(discountPercent === pct ? 0 : pct)}
+                    className={`flex-1 py-1.5 text-xs font-semibold rounded-md border transition-all duration-200 ${
                       discountPercent === pct
-                        ? 'bg-yellow-500/20 border-yellow-500/60 text-yellow-300 font-bold shadow-sm'
-                        : 'bg-[#131f17] border-[#253d28] text-gray-400 hover:text-gray-200 hover:border-gray-500'
+                        ? 'bg-amber-100 border-amber-400 text-amber-700 font-bold shadow-sm'
+                        : 'bg-white border-amber-200 text-amber-600 hover:bg-amber-50 hover:border-amber-300'
                     }`}
                   >
-                    {pct === 0 ? '0%' : `${pct}%`}
+                    {pct}%
                   </button>
                 ))}
               </div>
             </div>
 
             {/* Totals */}
-            <div className="border-t border-[#1d3021] pt-3 space-y-2">
-              <div className="flex justify-between text-sm text-gray-400">
+            <div className="border-t border-slate-200 pt-3 space-y-2">
+              <div className="flex justify-between text-sm text-slate-500">
                 <span>Items</span>
                 <span><AnimatedNumber value={cart.reduce((s, i) => s + i.quantity, 0)} duration={400} /> units</span>
               </div>
-              <div className="flex justify-between text-sm text-gray-400">
+              <div className="flex justify-between text-sm text-slate-500">
                 <span>Subtotal</span>
                 <span>৳<AnimatedNumber value={subtotal} format={money} duration={400} /></span>
               </div>
               {discountPercent > 0 && (
-                <div className="flex justify-between text-sm text-yellow-400 animate-fade-in font-medium">
+                <div className="flex justify-between text-sm text-amber-600 animate-fade-in font-medium">
                   <span>Discount ({discountPercent}%)</span>
                   <span>-৳<AnimatedNumber value={discountAmount} format={money} duration={400} /></span>
                 </div>
               )}
-              <div className="flex justify-between text-sm text-gray-400">
+              <div className="flex justify-between text-sm text-slate-500">
                 <span>Est. Profit</span>
                 <span className="text-brand-500">৳<AnimatedNumber value={totalProfit} format={money} duration={500} /></span>
               </div>
-              <div className="flex justify-between text-xl font-bold text-white border-t border-[#253d28] pt-3 mt-2">
+              <div className="flex justify-between text-xl font-bold text-slate-800 border-t border-slate-200 pt-3 mt-2">
                 <span>Total</span>
-                <span className="text-brand-400 inline-block drop-shadow-[0_0_12px_rgb(34_197_94/0.35)]">৳<AnimatedNumber value={total} format={money} duration={500} /></span>
+                <span className="text-brand-600 inline-block drop-shadow-[0_0_12px_rgb(34_197_94/0.35)]">৳<AnimatedNumber value={total} format={money} duration={500} /></span>
               </div>
             </div>
 
             {hasStockError && (
-              <div className="bg-red-900/20 border border-red-800/40 rounded-lg p-3 text-xs text-red-400 animate-fade-up">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-xs text-red-600 animate-fade-up">
                 ⚠ Some items exceed available stock. Reduce quantities to continue.
               </div>
             )}

@@ -31,18 +31,18 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' })
     <div
       ref={overlayRef}
       onClick={(e) => e.target === overlayRef.current && onClose()}
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 transition-opacity duration-200 ${closing ? 'opacity-0' : 'animate-fade-in'}`}
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 backdrop-blur-sm p-4 transition-opacity duration-200 ${closing ? 'opacity-0' : 'animate-fade-in'}`}
     >
       <div
-        className={`w-full ${sizes[size]} bg-[#0f1812]/95 border border-[#1d3021] rounded-2xl shadow-2xl shadow-black/60 ring-1 ring-brand-500/10 transition-all duration-200
+        className={`w-full ${sizes[size]} bg-white/95 border border-slate-200 rounded-2xl shadow-2xl shadow-slate-900/10 ring-1 ring-brand-500/10 transition-all duration-200
           ${closing ? 'opacity-0 scale-95 translate-y-2' : 'animate-scale-in'}`}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#1d3021]">
-          <h2 className="text-lg font-semibold text-white">{title}</h2>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+          <h2 className="text-lg font-semibold text-slate-800">{title}</h2>
           <button
             onClick={onClose}
             aria-label="Close"
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 text-xl hover:text-white hover:bg-red-500/20 hover:rotate-90 transition-all duration-300"
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 text-xl hover:text-slate-800 hover:bg-red-50 hover:rotate-90 transition-all duration-300"
           >×</button>
         </div>
         <div className="p-6 max-h-[75vh] overflow-y-auto">{children}</div>

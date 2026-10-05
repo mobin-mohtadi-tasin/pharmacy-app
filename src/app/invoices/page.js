@@ -55,7 +55,7 @@ export default function InvoicesPage() {
         {(from || to) && (
           <button onClick={() => { setFrom(''); setTo(''); setPage(1); }} className="btn-secondary btn-sm self-end">Clear</button>
         )}
-        <div className="ml-auto self-end text-sm text-gray-500">{total} invoice{total !== 1 ? 's' : ''}</div>
+        <div className="ml-auto self-end text-sm text-slate-500">{total} invoice{total !== 1 ? 's' : ''}</div>
       </div>
 
       <div className="table-wrap">
@@ -73,23 +73,23 @@ export default function InvoicesPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={7} className="text-center py-12 text-gray-500">Loading…</td></tr>
+              <tr><td colSpan={7} className="text-center py-12 text-slate-500">Loading…</td></tr>
             ) : invoices.length === 0 ? (
-              <tr><td colSpan={7} className="text-center py-12 text-gray-500">No invoices found</td></tr>
+              <tr><td colSpan={7} className="text-center py-12 text-slate-500">No invoices found</td></tr>
             ) : invoices.map(inv => (
               <tr key={inv.id}>
-                <td className="font-mono text-sm text-gray-200">{inv.invoice_no}</td>
-                <td className="text-gray-400">{inv.date}</td>
+                <td className="font-mono text-sm text-slate-700">{inv.invoice_no}</td>
+                <td className="text-slate-500">{inv.date}</td>
                 <td><span className={PAYMENT_COLORS[inv.payment_method] || 'badge'}>{inv.payment_method}</span></td>
-                <td className="text-gray-300">৳{Number(inv.subtotal || inv.total_amount).toFixed(2)}</td>
+                <td className="text-slate-600">৳{Number(inv.subtotal || inv.total_amount).toFixed(2)}</td>
                 <td>
                   {inv.discount_percent > 0 ? (
                     <span className="badge-yellow">-{inv.discount_percent}% (-৳{Number(inv.discount_amount).toFixed(2)})</span>
                   ) : (
-                    <span className="text-gray-600">—</span>
+                    <span className="text-slate-400">—</span>
                   )}
                 </td>
-                <td className="font-semibold text-brand-400">৳{Number(inv.total_amount).toFixed(2)}</td>
+                <td className="font-semibold text-brand-600">৳{Number(inv.total_amount).toFixed(2)}</td>
                 <td>
                   <Link href={`/invoices/${inv.id}`} className="btn-secondary btn-sm">View</Link>
                 </td>
@@ -103,7 +103,7 @@ export default function InvoicesPage() {
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2 mt-5">
           <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="btn-secondary btn-sm">← Prev</button>
-          <span className="text-sm text-gray-400">Page {page} of {totalPages}</span>
+          <span className="text-sm text-slate-500">Page {page} of {totalPages}</span>
           <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="btn-secondary btn-sm">Next →</button>
         </div>
       )}

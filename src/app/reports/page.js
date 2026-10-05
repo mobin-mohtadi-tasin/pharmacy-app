@@ -69,7 +69,7 @@ export default function ReportsPage() {
       {ToastEl}
       <div className="page-header">
         <h1 className="page-title">Reports & Export</h1>
-        <button onClick={handleExport} disabled={exporting} className="btn-primary">
+        <button onClick={handleExport} disabled={exporting} className="btn-blue">
           {exporting ? '⏳ Exporting…' : '⬇ Download Excel'}
         </button>
       </div>
@@ -85,9 +85,9 @@ export default function ReportsPage() {
           <input type="date" className="input w-40" value={to} onChange={e => setTo(e.target.value)} />
         </div>
         <div className="flex gap-2 self-end">
-          <button onClick={() => setQuick('today')} className="btn-secondary btn-sm">Today</button>
-          <button onClick={() => setQuick('week')} className="btn-secondary btn-sm">This Week</button>
-          <button onClick={() => setQuick('month')} className="btn-secondary btn-sm">This Month</button>
+          <button onClick={() => setQuick('today')} className="btn-sm rounded-lg font-medium border transition-all hover:-translate-y-0.5 bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100">Today</button>
+          <button onClick={() => setQuick('week')} className="btn-sm rounded-lg font-medium border transition-all hover:-translate-y-0.5 bg-sky-50 border-sky-200 text-sky-700 hover:bg-sky-100">This Week</button>
+          <button onClick={() => setQuick('month')} className="btn-sm rounded-lg font-medium border transition-all hover:-translate-y-0.5 bg-violet-50 border-violet-200 text-violet-700 hover:bg-violet-100">This Month</button>
         </div>
       </div>
 
@@ -98,14 +98,14 @@ export default function ReportsPage() {
           {/* Summary cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             {[
-              { label: 'Total Revenue', value: `৳${Number(summary.total_revenue || 0).toFixed(2)}`, color: 'text-brand-400' },
-              { label: 'Total Cost', value: `৳${Number(summary.total_cost || 0).toFixed(2)}`, color: 'text-gray-300' },
-              { label: 'Total Profit', value: `৳${Number(summary.total_profit || 0).toFixed(2)}`, color: 'text-teal-400' },
-              { label: 'Margin', value: `${summary.margin_percent || 0}%`, color: 'text-yellow-400' },
+              { label: 'Total Revenue', value: `৳${Number(summary.total_revenue || 0).toFixed(2)}`, color: 'text-emerald-700', bg: 'bg-gradient-to-br from-emerald-50 to-white border-emerald-200' },
+              { label: 'Total Cost', value: `৳${Number(summary.total_cost || 0).toFixed(2)}`, color: 'text-rose-700', bg: 'bg-gradient-to-br from-rose-50 to-white border-rose-200' },
+              { label: 'Total Profit', value: `৳${Number(summary.total_profit || 0).toFixed(2)}`, color: 'text-teal-700', bg: 'bg-gradient-to-br from-teal-50 to-white border-teal-200' },
+              { label: 'Margin', value: `${summary.margin_percent || 0}%`, color: 'text-amber-700', bg: 'bg-gradient-to-br from-amber-50 to-white border-amber-200' },
             ].map(s => (
-              <div key={s.label} className="card p-4">
+              <div key={s.label} className={`card p-4 ${s.bg}`}>
                 <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
-                <p className="text-xs text-gray-500 mt-1">{s.label}</p>
+                <p className="text-xs text-slate-500 mt-1">{s.label}</p>
               </div>
             ))}
           </div>
@@ -113,9 +113,9 @@ export default function ReportsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
             {/* Payment summary */}
             <div className="card p-5">
-              <h2 className="text-sm font-semibold text-gray-300 mb-4">Payment Breakdown</h2>
+              <h2 className="text-sm font-semibold text-slate-600 mb-4">Payment Breakdown</h2>
               {paymentSummary.length === 0 ? (
-                <p className="text-sm text-gray-500">No data</p>
+                <p className="text-sm text-slate-500">No data</p>
               ) : (
                 <div className="space-y-3">
                   {paymentSummary.map(p => {
@@ -124,13 +124,13 @@ export default function ReportsPage() {
                     return (
                       <div key={p.payment_method}>
                         <div className="flex justify-between text-sm mb-1">
-                          <span className="text-gray-300">{p.payment_method}</span>
-                          <span className="text-brand-400">৳{Number(p.total).toFixed(2)}</span>
+                          <span className="text-slate-600">{p.payment_method}</span>
+                          <span className="text-brand-600">৳{Number(p.total).toFixed(2)}</span>
                         </div>
-                        <div className="w-full bg-[#1d3021] rounded-full h-1.5">
-                          <div className="bg-brand-600 h-1.5 rounded-full" style={{ width: `${pct}%` }} />
+                        <div className="w-full bg-slate-100 rounded-full h-1.5">
+                          <div className="bg-gradient-to-r from-indigo-500 to-sky-400 h-1.5 rounded-full" style={{ width: `${pct}%` }} />
                         </div>
-                        <p className="text-[10px] text-gray-600 mt-0.5">{p.invoice_count} invoices · {pct}%</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">{p.invoice_count} invoices · {pct}%</p>
                       </div>
                     );
                   })}
@@ -140,7 +140,7 @@ export default function ReportsPage() {
 
             {/* Stats */}
             <div className="lg:col-span-2 card p-5">
-              <h2 className="text-sm font-semibold text-gray-300 mb-4">Period Summary</h2>
+              <h2 className="text-sm font-semibold text-slate-600 mb-4">Period Summary</h2>
               <div className="grid grid-cols-2 gap-4">
                 {[
                   { label: 'Invoices', value: summary.invoice_count || 0 },
@@ -148,9 +148,9 @@ export default function ReportsPage() {
                   { label: 'Avg Revenue/Invoice', value: summary.invoice_count ? `৳${(summary.total_revenue / summary.invoice_count).toFixed(2)}` : '—' },
                   { label: 'Avg Profit/Invoice', value: summary.invoice_count ? `৳${(summary.total_profit / summary.invoice_count).toFixed(2)}` : '—' },
                 ].map(s => (
-                  <div key={s.label} className="bg-[#131f17] rounded-lg p-3">
-                    <p className="text-lg font-bold text-white">{s.value}</p>
-                    <p className="text-xs text-gray-500">{s.label}</p>
+                  <div key={s.label} className="bg-slate-50 rounded-lg p-3">
+                    <p className="text-lg font-bold text-slate-800">{s.value}</p>
+                    <p className="text-xs text-slate-500">{s.label}</p>
                   </div>
                 ))}
               </div>
@@ -159,25 +159,25 @@ export default function ReportsPage() {
 
           {/* Sales detail table */}
           <div className="card">
-            <div className="px-5 py-4 border-b border-[#1d3021] flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-gray-300">Sales Detail ({items.length} line items)</h2>
+            <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-slate-600">Sales Detail ({items.length} line items)</h2>
             </div>
             <div className="table-wrap border-0 rounded-none rounded-b-xl">
               <table className="data-table">
                 <thead><tr><th>Invoice</th><th>Medicine</th><th>Group</th><th>Qty</th><th>Cost</th><th>Selling Price</th><th>Revenue</th><th>Profit</th><th>Payment</th></tr></thead>
                 <tbody>
                   {items.length === 0 ? (
-                    <tr><td colSpan={9} className="text-center py-10 text-gray-500">No sales in this period</td></tr>
+                    <tr><td colSpan={9} className="text-center py-10 text-slate-500">No sales in this period</td></tr>
                   ) : items.map((item, i) => (
                     <tr key={i}>
-                      <td className="font-mono text-xs text-gray-400">{item.invoice_no}</td>
-                      <td className="font-medium text-gray-200">{item.medicine_name}</td>
+                      <td className="font-mono text-xs text-slate-500">{item.invoice_no}</td>
+                      <td className="font-medium text-slate-700">{item.medicine_name}</td>
                       <td><span className="badge-green">{item.group_name || '—'}</span></td>
                       <td>{item.quantity}</td>
-                      <td className="text-gray-400">৳{Number(item.cost_price_snapshot).toFixed(2)}</td>
-                      <td className="text-gray-300">৳{Number(item.selling_price).toFixed(2)}</td>
-                      <td className="text-brand-400">৳{Number(item.revenue).toFixed(2)}</td>
-                      <td className="text-teal-400">৳{Number(item.profit).toFixed(2)}</td>
+                      <td className="text-slate-500">৳{Number(item.cost_price_snapshot).toFixed(2)}</td>
+                      <td className="text-slate-600">৳{Number(item.selling_price).toFixed(2)}</td>
+                      <td className="text-brand-600">৳{Number(item.revenue).toFixed(2)}</td>
+                      <td className="text-teal-600">৳{Number(item.profit).toFixed(2)}</td>
                       <td><span className="badge-blue text-[10px]">{item.payment_method}</span></td>
                     </tr>
                   ))}

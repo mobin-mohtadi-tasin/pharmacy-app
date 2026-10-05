@@ -81,9 +81,9 @@ export default function MedicinesPage() {
   const setMedField = (k, v) => setEditModal(prev => ({ ...prev, med: { ...prev.med, [k]: v } }));
 
   const stockColor = (med) => {
-    if (med.current_stock === 0) return 'text-red-400 font-bold';
-    if (med.current_stock <= med.low_stock_threshold) return 'text-yellow-400 font-bold';
-    return 'text-brand-400';
+    if (med.current_stock === 0) return 'text-red-600 font-bold';
+    if (med.current_stock <= med.low_stock_threshold) return 'text-amber-600 font-bold';
+    return 'text-brand-600';
   };
 
   return (
@@ -109,7 +109,7 @@ export default function MedicinesPage() {
         </div>
         <label className="flex items-center gap-2 cursor-pointer pb-0.5">
           <input type="checkbox" checked={lowStock} onChange={e => setLowStock(e.target.checked)} className="rounded text-brand-600" />
-          <span className="text-sm text-gray-300">Low stock only</span>
+          <span className="text-sm text-slate-600">Low stock only</span>
         </label>
       </div>
 
@@ -129,30 +129,30 @@ export default function MedicinesPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={8} className="text-center py-12 text-gray-500">Loading…</td></tr>
+              <tr><td colSpan={8} className="text-center py-12 text-slate-500">Loading…</td></tr>
             ) : medicines.length === 0 ? (
-              <tr><td colSpan={8} className="text-center py-12 text-gray-500">No medicines found</td></tr>
+              <tr><td colSpan={8} className="text-center py-12 text-slate-500">No medicines found</td></tr>
             ) : medicines.map(med => (
               <tr key={med.id}>
                 <td>
-                  <div className="font-medium text-gray-100">{med.name}</div>
-                  <div className="text-xs text-gray-500">{med.strength} {med.dosage_form && `· ${med.dosage_form}`}</div>
-                  {med.manufacturer && <div className="text-[10px] text-gray-600">{med.manufacturer}</div>}
+                  <div className="font-medium text-slate-800">{med.name}</div>
+                  <div className="text-xs text-slate-500">{med.strength} {med.dosage_form && `· ${med.dosage_form}`}</div>
+                  {med.manufacturer && <div className="text-[10px] text-slate-400">{med.manufacturer}</div>}
                   {med.source_url && (
                     <a href={med.source_url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-brand-600 hover:underline">MedEx ↗</a>
                   )}
                 </td>
-                <td className="text-gray-400 text-sm">{med.generic_name || '—'}</td>
-                <td>{med.group_name ? <span className="badge-green">{med.group_name}</span> : <span className="text-gray-600">—</span>}</td>
-                <td className="text-gray-400 text-xs">{med.unit_type}</td>
+                <td className="text-slate-500 text-sm">{med.generic_name || '—'}</td>
+                <td>{med.group_name ? <span className="badge-green">{med.group_name}</span> : <span className="text-slate-400">—</span>}</td>
+                <td className="text-slate-500 text-xs">{med.unit_type}</td>
                 <td>
                   <span className={stockColor(med)}>{med.current_stock}</span>
                   {med.current_stock <= med.low_stock_threshold && (
-                    <span className="ml-1 text-[10px] text-yellow-600">low</span>
+                    <span className="ml-1 text-[10px] text-amber-600">low</span>
                   )}
                 </td>
-                <td className="text-gray-300">৳{Number(med.avg_cost_price).toFixed(2)}</td>
-                <td className="text-gray-300">{med.last_selling_price ? `৳${Number(med.last_selling_price).toFixed(2)}` : '—'}</td>
+                <td className="text-slate-600">৳{Number(med.avg_cost_price).toFixed(2)}</td>
+                <td className="text-slate-600">{med.last_selling_price ? `৳${Number(med.last_selling_price).toFixed(2)}` : '—'}</td>
                 <td>
                   <div className="flex gap-1">
                     <button onClick={() => showHistory(med)} className="btn-secondary btn-sm" title="Stock history">📋</button>
@@ -200,7 +200,7 @@ export default function MedicinesPage() {
 
       {/* Delete Confirm */}
       <Modal isOpen={!!deleteConfirm} onClose={() => setDeleteConfirm(null)} title="Delete Medicine" size="sm">
-        <p className="text-gray-300 mb-4">Delete <strong className="text-white">{deleteConfirm?.name}</strong>? This cannot be undone.</p>
+        <p className="text-slate-600 mb-4">Delete <strong className="text-slate-800">{deleteConfirm?.name}</strong>? This cannot be undone.</p>
         <div className="flex gap-3">
           <button onClick={() => handleDelete(deleteConfirm.id)} className="btn-danger flex-1 justify-center">Delete</button>
           <button onClick={() => setDeleteConfirm(null)} className="btn-secondary flex-1 justify-center">Cancel</button>
@@ -210,7 +210,7 @@ export default function MedicinesPage() {
       {/* History Modal */}
       <Modal isOpen={historyModal.open} onClose={() => setHistoryModal(p => ({ ...p, open: false }))} title={`Stock History — ${historyModal.med?.name}`} size="lg">
         {historyModal.history.length === 0 ? (
-          <p className="text-gray-500 text-center py-8">No stock-in records</p>
+          <p className="text-slate-500 text-center py-8">No stock-in records</p>
         ) : (
           <div className="table-wrap">
             <table className="data-table">
@@ -219,11 +219,11 @@ export default function MedicinesPage() {
                 {historyModal.history.map(h => (
                   <tr key={h.id}>
                     <td>{h.date}</td>
-                    <td className="text-brand-400 font-medium">+{h.quantity}</td>
+                    <td className="text-brand-600 font-medium">+{h.quantity}</td>
                     <td>৳{Number(h.cost_price).toFixed(2)}</td>
-                    <td className="text-gray-400">{h.batch_no || '—'}</td>
-                    <td className="text-gray-400">{h.expiry_date || '—'}</td>
-                    <td className="text-gray-400">{h.supplier || '—'}</td>
+                    <td className="text-slate-500">{h.batch_no || '—'}</td>
+                    <td className="text-slate-500">{h.expiry_date || '—'}</td>
+                    <td className="text-slate-500">{h.supplier || '—'}</td>
                   </tr>
                 ))}
               </tbody>

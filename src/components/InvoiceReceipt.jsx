@@ -24,62 +24,62 @@ export default function InvoiceReceipt({ invoice, items }) {
         }
       `}</style>
 
-      <div id="receipt-print" className="font-mono text-xs text-gray-200 bg-[#131f17] rounded-xl p-5 border border-[#253d28] min-w-64">
+      <div id="receipt-print" className="font-mono text-xs text-slate-700 bg-slate-50 rounded-xl p-5 border border-slate-200 min-w-64">
         {/* Header */}
-        <div className="text-center mb-4 border-b border-dashed border-gray-600 pb-4">
-          <p className="text-base font-bold text-brand-400">PharmaCare</p>
-          <p className="text-gray-400 text-[11px]">Pharmacy Billing System</p>
-          <p className="text-gray-500 text-[10px] mt-1">Invoice: {invoice.invoice_no}</p>
-          <p className="text-gray-500 text-[10px]">Date: {invoice.date} · {invoice.created_at?.slice(11, 16)}</p>
-          <p className="text-gray-500 text-[10px]">Payment: {invoice.payment_method}</p>
+        <div className="text-center mb-4 border-b border-dashed border-slate-300 pb-4">
+          <p className="text-base font-bold text-brand-600">PharmaCare</p>
+          <p className="text-slate-500 text-[11px]">Pharmacy Billing System</p>
+          <p className="text-slate-500 text-[10px] mt-1">Invoice: {invoice.invoice_no}</p>
+          <p className="text-slate-500 text-[10px]">Date: {invoice.date} · {invoice.created_at?.slice(11, 16)}</p>
+          <p className="text-slate-500 text-[10px]">Payment: {invoice.payment_method}</p>
         </div>
 
         {/* Items */}
         <table className="w-full text-[11px] mb-3">
           <thead>
-            <tr className="border-b border-gray-600">
-              <th className="text-left pb-1 text-gray-400">Item</th>
-              <th className="text-right pb-1 text-gray-400">Qty</th>
-              <th className="text-right pb-1 text-gray-400">Price</th>
-              <th className="text-right pb-1 text-gray-400">Total</th>
+            <tr className="border-b border-slate-300">
+              <th className="text-left pb-1 text-slate-500">Item</th>
+              <th className="text-right pb-1 text-slate-500">Qty</th>
+              <th className="text-right pb-1 text-slate-500">Price</th>
+              <th className="text-right pb-1 text-slate-500">Total</th>
             </tr>
           </thead>
           <tbody>
             {items.map((item, i) => (
-              <tr key={i} className="border-b border-[#1d3021]">
+              <tr key={i} className="border-b border-slate-200">
                 <td className="py-1.5 pr-2">
-                  <div className="text-gray-100">{item.medicine_name}</div>
-                  {item.strength && <div className="text-gray-500 text-[10px]">{item.strength}</div>}
+                  <div className="text-slate-800">{item.medicine_name}</div>
+                  {item.strength && <div className="text-slate-500 text-[10px]">{item.strength}</div>}
                 </td>
-                <td className="text-right text-gray-300">{item.quantity}</td>
-                <td className="text-right text-gray-300">৳{Number(item.selling_price).toFixed(2)}</td>
-                <td className="text-right text-gray-200">৳{(item.quantity * item.selling_price).toFixed(2)}</td>
+                <td className="text-right text-slate-600">{item.quantity}</td>
+                <td className="text-right text-slate-600">৳{Number(item.selling_price).toFixed(2)}</td>
+                <td className="text-right text-slate-700">৳{(item.quantity * item.selling_price).toFixed(2)}</td>
               </tr>
             ))}
           </tbody>
         </table>
 
         {/* Total & Discount */}
-        <div className="border-t border-dashed border-gray-600 pt-3 space-y-1">
+        <div className="border-t border-dashed border-slate-300 pt-3 space-y-1">
           {discountPercent > 0 && (
             <>
-              <div className="flex justify-between items-center text-gray-400">
+              <div className="flex justify-between items-center text-slate-500">
                 <span>Subtotal</span>
                 <span>৳{subtotal.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between items-center text-yellow-400">
+              <div className="flex justify-between items-center text-amber-600">
                 <span>Discount ({discountPercent}%)</span>
                 <span>-৳{discountAmount.toFixed(2)}</span>
               </div>
             </>
           )}
-          <div className="flex justify-between items-center pt-1 border-t border-dashed border-gray-700">
-            <span className="font-bold text-gray-300">TOTAL</span>
-            <span className="text-lg font-bold text-brand-400">৳{finalTotal.toFixed(2)}</span>
+          <div className="flex justify-between items-center pt-1 border-t border-dashed border-slate-300">
+            <span className="font-bold text-slate-600">TOTAL</span>
+            <span className="text-lg font-bold text-brand-600">৳{finalTotal.toFixed(2)}</span>
           </div>
         </div>
 
-        <div className="text-center mt-4 text-[10px] text-gray-600 border-t border-dashed border-gray-700 pt-3">
+        <div className="text-center mt-4 text-[10px] text-slate-400 border-t border-dashed border-slate-300 pt-3">
           Thank you for your purchase!
         </div>
       </div>

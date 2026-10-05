@@ -77,8 +77,8 @@ export default function GroupsPage() {
         {groups.map(g => (
           <div key={g.id} className="card p-4 flex items-center justify-between gap-3">
             <div>
-              <p className="font-medium text-gray-100">{g.name}</p>
-              <p className="text-xs text-gray-500 mt-0.5">{g.medicine_count} medicine{g.medicine_count !== 1 ? 's' : ''}</p>
+              <p className="font-medium text-slate-800">{g.name}</p>
+              <p className="text-xs text-slate-500 mt-0.5">{g.medicine_count} medicine{g.medicine_count !== 1 ? 's' : ''}</p>
             </div>
             <div className="flex gap-1 shrink-0">
               <button
@@ -95,7 +95,7 @@ export default function GroupsPage() {
           </div>
         ))}
         {groups.length === 0 && (
-          <div className="col-span-4 text-center py-12 text-gray-500">
+          <div className="col-span-4 text-center py-12 text-slate-500">
             No groups yet — add one above
           </div>
         )}
@@ -119,7 +119,7 @@ export default function GroupsPage() {
 
       {/* Delete Confirm */}
       <Modal isOpen={!!deleteConfirm} onClose={() => setDeleteConfirm(null)} title="Delete Group" size="sm">
-        <p className="text-gray-300 mb-4">Delete group <strong className="text-white">{deleteConfirm?.name}</strong>?</p>
+        <p className="text-slate-600 mb-4">Delete group <strong className="text-slate-800">{deleteConfirm?.name}</strong>?</p>
         <div className="flex gap-3">
           <button onClick={() => handleDelete(deleteConfirm)} className="btn-danger flex-1 justify-center">Delete</button>
           <button onClick={() => setDeleteConfirm(null)} className="btn-secondary flex-1 justify-center">Cancel</button>
