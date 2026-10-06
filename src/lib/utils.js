@@ -9,10 +9,10 @@ export function formatBDT(amount) {
 }
 
 /** Generate invoice number: INV-YYYYMMDD-NNNN */
-export function generateInvoiceNo(db) {
+export async function generateInvoiceNo(db) {
   const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
   const prefix = `INV-${today}-`;
-  const last = db.prepare(
+  const last = await db.prepare(
     `SELECT invoice_no FROM invoices WHERE invoice_no LIKE ? ORDER BY invoice_no DESC LIMIT 1`
   ).get(`${prefix}%`);
 

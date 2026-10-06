@@ -23,7 +23,7 @@ export async function GET(req) {
 
     // Match group from local database
     const db = getDb();
-    const groups = db.prepare(`SELECT id, name FROM groups ORDER BY name ASC`).all();
+    const groups = await db.prepare(`SELECT id, name FROM groups ORDER BY name ASC`).all();
     const matchedGroupId = mapToGroupId(
       details.therapeutic_class,
       generic_name || details.generic_name,

@@ -7,9 +7,10 @@ export async function PUT(req, { params }) {
     const { name } = await req.json();
     if (!name?.trim()) return err('Group name is required');
     const db = getDb();
-    const result = db.prepare(`UPDATE groups SET name = ? WHERE id = ?`).run(name.trim(), id);
+    const result = await db.prepare(`UPDATE groups SET name = ? WHERE id = ?`).run(name.trim(), id);
     if (result.changes === 0) return err('Group not found', 404);
-    return ok(db.prepare(`SELECT * FROM groups WHERE id = ?`).get(id));
+    const updated = await db.prepare(`SELECT * FROM groups WHERE id = ?`).get(id);
+    return ok(updated);
   } catch (e) {
     if (e.message?.includes('UNIQUE')) return err('Group name already exists', 409);
     return err(e.message, 500);
@@ -19,9 +20,9 @@ export async function PUT(req, { params }) {
 export async function DELETE(req, { params }) {
   const { id } = await params;
   const db = getDb();
-  const count = db.prepare(`SELECT COUNT(*) as c FROM medicines WHERE group_id = ?`).get(id);
-  if (count.c > 0) return err(`Cannot delete — ${count.c} medicines are in this group`, 409);
-  const result = db.prepare(`DELETE FROM groups WHERE id = ?`).run(id);
+  const count = await db.prepare(`SELECT COUNT(*) as c FROM medicines WHERE group_id = ?`).get(id);
+  if (count && count.c > 0) return err(`Cannot delete — ${count.c} medicines are in this group`, 409);
+  const result = await db.prepare(`DELETE FROM groups WHERE id = ?`).run(id);
   if (result.changes === 0) return err('Group not found', 404);
   return ok({ deleted: true });
 }

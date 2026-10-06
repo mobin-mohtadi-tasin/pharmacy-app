@@ -6,7 +6,7 @@ export async function GET() {
   const today = new Date().toISOString().slice(0, 10);
 
   // Today's stats
-  const todayStats = db.prepare(`
+  const todayStats = (await db.prepare(`
     SELECT
       COALESCE(SUM(ii.quantity * ii.selling_price), 0) as total_revenue,
       COALESCE(SUM(ii.quantity * ii.cost_price_snapshot), 0) as total_cost,
@@ -15,14 +15,16 @@ export async function GET() {
     FROM invoice_items ii
     JOIN invoices i ON i.id = ii.invoice_id
     WHERE i.date = ?
-  `).get(today);
+  `).get(today)) || {};
 
-  const margin = todayStats.total_revenue > 0
-    ? (todayStats.total_profit / todayStats.total_revenue * 100).toFixed(1)
+  const totalRev = Number(todayStats.total_revenue) || 0;
+  const totalProf = Number(todayStats.total_profit) || 0;
+  const margin = totalRev > 0
+    ? ((totalProf / totalRev) * 100).toFixed(1)
     : 0;
 
   // Low stock alerts
-  const lowStockAlerts = db.prepare(`
+  const lowStockAlerts = await db.prepare(`
     SELECT m.id, m.name, m.strength, m.dosage_form, m.current_stock, m.low_stock_threshold, g.name as group_name
     FROM medicines m
     LEFT JOIN groups g ON g.id = m.group_id
@@ -32,7 +34,7 @@ export async function GET() {
   `).all();
 
   // Expiring soon alerts (within 3 months)
-  const expiringAlerts = db.prepare(`
+  const expiringAlerts = await db.prepare(`
     SELECT
       m.id, m.name, m.strength, m.dosage_form, m.current_stock,
       COALESCE(m.expiry_date, (SELECT MIN(s.expiry_date) FROM stock_ins s WHERE s.medicine_id = m.id AND s.expiry_date IS NOT NULL AND TRIM(s.expiry_date) != '')) as expiry_date,
@@ -48,7 +50,7 @@ export async function GET() {
   `).all();
 
   // Last 7 days sales chart data
-  const sevenDayData = db.prepare(`
+  const sevenDayData = await db.prepare(`
     SELECT i.date, COALESCE(SUM(i.total_amount), 0) as revenue
     FROM invoices i
     WHERE i.date >= date(?, '-6 days')
@@ -57,7 +59,7 @@ export async function GET() {
   `).all(today);
 
   // Today's recent invoices
-  const recentInvoices = db.prepare(`
+  const recentInvoices = await db.prepare(`
     SELECT * FROM invoices WHERE date = ? ORDER BY created_at DESC LIMIT 5
   `).all(today);
 

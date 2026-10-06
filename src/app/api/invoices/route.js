@@ -5,8 +5,8 @@ export async function GET(req) {
   const { searchParams } = new URL(req.url);
   const from = searchParams.get('from');
   const to = searchParams.get('to');
-  const page = parseInt(searchParams.get('page') || '1');
-  const limit = parseInt(searchParams.get('limit') || '50');
+  const page = parseInt(searchParams.get('page') || '1', 10);
+  const limit = parseInt(searchParams.get('limit') || '50', 10);
   const offset = (page - 1) * limit;
 
   const db = getDb();
@@ -17,8 +17,9 @@ export async function GET(req) {
   sql += ` ORDER BY created_at DESC LIMIT ? OFFSET ?`;
   args.push(limit, offset);
 
-  const invoices = db.prepare(sql).all(...args);
-  const total = db.prepare(`SELECT COUNT(*) as c FROM invoices WHERE 1=1${from ? ' AND date >= ?' : ''}${to ? ' AND date <= ?' : ''}`).get(...args.slice(0, -2)).c;
+  const invoices = await db.prepare(sql).all(...args);
+  const totalRow = await db.prepare(`SELECT COUNT(*) as c FROM invoices WHERE 1=1${from ? ' AND date >= ?' : ''}${to ? ' AND date <= ?' : ''}`).get(...args.slice(0, -2));
+  const total = totalRow ? totalRow.c : 0;
 
   return ok({ invoices, total, page, limit });
 }
@@ -40,22 +41,22 @@ export async function POST(req) {
       if (!item.medicine_id || !item.quantity || !item.selling_price) {
         return err('Each item requires medicine_id, quantity, and selling_price');
       }
-      const med = db.prepare(`SELECT * FROM medicines WHERE id = ?`).get(item.medicine_id);
+      const med = await db.prepare(`SELECT * FROM medicines WHERE id = ?`).get(item.medicine_id);
       if (!med) return err(`Medicine ID ${item.medicine_id} not found`);
       if (med.current_stock < item.quantity) {
         return err(`Insufficient stock for "${med.name}" — available: ${med.current_stock}, requested: ${item.quantity}`);
       }
     }
 
-    const invoice_no = generateInvoiceNo(db);
+    const invoice_no = await generateInvoiceNo(db);
     const subtotal = items.reduce((s, i) => s + (i.quantity * i.selling_price), 0);
     const discountPct = Math.min(100, Math.max(0, parseFloat(discount_percent) || 0));
     const discount_amount = Number(((subtotal * discountPct) / 100).toFixed(2));
     const total_amount = Math.max(0, Number((subtotal - discount_amount).toFixed(2)));
     const invoiceDate = date || new Date().toISOString().slice(0, 10);
 
-    const createInvoice = db.transaction(() => {
-      const inv = db.prepare(`
+    const invoice_id = await db.transaction(async (txDb) => {
+      const inv = await txDb.prepare(`
         INSERT INTO invoices (invoice_no, date, subtotal, discount_percent, discount_amount, total_amount, payment_method, notes)
         VALUES (@invoice_no, @date, @subtotal, @discount_percent, @discount_amount, @total_amount, @payment_method, @notes)
       `).run({
@@ -69,32 +70,31 @@ export async function POST(req) {
         notes: notes || null,
       });
 
-      const invoice_id = inv.lastInsertRowid;
+      const invId = inv.lastInsertRowid;
 
       for (const item of items) {
-        const med = db.prepare(`SELECT avg_cost_price FROM medicines WHERE id = ?`).get(item.medicine_id);
-        db.prepare(`
+        const med = await txDb.prepare(`SELECT avg_cost_price FROM medicines WHERE id = ?`).get(item.medicine_id);
+        await txDb.prepare(`
           INSERT INTO invoice_items (invoice_id, medicine_id, quantity, selling_price, cost_price_snapshot)
           VALUES (@invoice_id, @medicine_id, @quantity, @selling_price, @cost_price_snapshot)
         `).run({
-          invoice_id,
+          invoice_id: invId,
           medicine_id: item.medicine_id,
           quantity: item.quantity,
           selling_price: item.selling_price,
-          cost_price_snapshot: med.avg_cost_price,
+          cost_price_snapshot: med ? med.avg_cost_price : 0,
         });
 
         // Deduct stock
-        db.prepare(`UPDATE medicines SET current_stock = current_stock - ?, last_selling_price = ? WHERE id = ?`)
+        await txDb.prepare(`UPDATE medicines SET current_stock = current_stock - ?, last_selling_price = ? WHERE id = ?`)
           .run(item.quantity, item.selling_price, item.medicine_id);
       }
 
-      return invoice_id;
+      return invId;
     });
 
-    const invoice_id = createInvoice();
-    const invoice = db.prepare(`SELECT * FROM invoices WHERE id = ?`).get(invoice_id);
-    const invoiceItems = db.prepare(`
+    const invoice = await db.prepare(`SELECT * FROM invoices WHERE id = ?`).get(invoice_id);
+    const invoiceItems = await db.prepare(`
       SELECT ii.*, m.name as medicine_name, m.strength, m.dosage_form, m.unit_type
       FROM invoice_items ii
       JOIN medicines m ON m.id = ii.medicine_id

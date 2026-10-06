@@ -11,7 +11,7 @@ export async function POST(req) {
     if (!cost_price || cost_price <= 0) return err('cost_price must be positive');
 
     const db = getDb();
-    const medicine = db.prepare(`SELECT * FROM medicines WHERE id = ?`).get(medicine_id);
+    const medicine = await db.prepare(`SELECT * FROM medicines WHERE id = ?`).get(medicine_id);
     if (!medicine) return err('Medicine not found', 404);
 
     // Compute new weighted average cost
@@ -24,8 +24,8 @@ export async function POST(req) {
     const priceChangeWarning = medicine.current_stock > 0 && isPriceChangeSignificant(medicine.avg_cost_price, cost_price);
 
     // Transaction: insert stock-in + update medicine
-    const doStockIn = db.transaction(() => {
-      db.prepare(`
+    await db.transaction(async (txDb) => {
+      await txDb.prepare(`
         INSERT INTO stock_ins (medicine_id, quantity, cost_price, batch_no, expiry_date, supplier, date)
         VALUES (@medicine_id, @quantity, @cost_price, @batch_no, @expiry_date, @supplier, @date)
       `).run({
@@ -38,7 +38,7 @@ export async function POST(req) {
         date: date || new Date().toISOString().slice(0, 10),
       });
 
-      db.prepare(`
+      await txDb.prepare(`
         UPDATE medicines
         SET
           current_stock = current_stock + @qty,
@@ -52,15 +52,16 @@ export async function POST(req) {
       `).run({ qty: quantity, avg: newAvg, expiry_date: expiry_date || null, id: medicine_id });
     });
 
-    doStockIn();
-
-    const updated = db.prepare(`SELECT m.*, g.name as group_name FROM medicines m LEFT JOIN groups g ON g.id = m.group_id WHERE m.id = ?`).get(medicine_id);
+    const updated = await db.prepare(`SELECT m.*, g.name as group_name FROM medicines m LEFT JOIN groups g ON g.id = m.group_id WHERE m.id = ?`).get(medicine_id);
 
     return ok({
       medicine: updated,
-      new_avg_cost: newAvg,
-      price_change_warning: priceChangeWarning,
-      old_avg_cost: medicine.avg_cost_price,
+      price_change_warning: priceChangeWarning ? {
+        old_avg: medicine.avg_cost_price,
+        new_cost: cost_price,
+        new_avg: newAvg,
+        message: `Cost price (৳${cost_price}) differs significantly from previous average (৳${medicine.avg_cost_price})`,
+      } : null,
     }, 201);
   } catch (e) {
     return err(e.message, 500);

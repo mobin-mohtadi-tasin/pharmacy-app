@@ -51,7 +51,7 @@ export async function GET(req) {
     sql += ` ORDER BY m.name ASC`;
   }
 
-  const medicines = db.prepare(sql).all(...args);
+  const medicines = await db.prepare(sql).all(...args);
   return ok(medicines);
 }
 
@@ -64,14 +64,14 @@ export async function POST(req) {
     const db = getDb();
 
     // Check for duplicate
-    const existing = db.prepare(`
+    const existing = await db.prepare(`
       SELECT id FROM medicines WHERE name = ? AND strength IS ? AND manufacturer IS ?
     `).get(name.trim(), strength || null, manufacturer || null);
     if (existing) return err('A medicine with this name, strength, and manufacturer already exists', 409);
 
     const finalSellingPrice = last_selling_price != null && last_selling_price !== '' ? Number(last_selling_price) : (body.selling_price != null && body.selling_price !== '' ? Number(body.selling_price) : null);
 
-    const result = db.prepare(`
+    const result = await db.prepare(`
       INSERT INTO medicines (name, generic_name, manufacturer, strength, dosage_form, unit_type, group_id, source_url, mrp, avg_cost_price, last_selling_price, low_stock_threshold, expiry_date)
       VALUES (@name, @generic_name, @manufacturer, @strength, @dosage_form, @unit_type, @group_id, @source_url, @mrp, @avg_cost_price, @last_selling_price, @low_stock_threshold, @expiry_date)
     `).run({
@@ -84,7 +84,7 @@ export async function POST(req) {
       expiry_date: expiry_date || null,
     });
 
-    const med = db.prepare(`
+    const med = await db.prepare(`
       SELECT m.*, g.name as group_name,
         COALESCE(m.expiry_date, (SELECT MIN(s.expiry_date) FROM stock_ins s WHERE s.medicine_id = m.id AND s.expiry_date IS NOT NULL AND TRIM(s.expiry_date) != '')) as expiry_date
       FROM medicines m LEFT JOIN groups g ON g.id = m.group_id WHERE m.id = ?

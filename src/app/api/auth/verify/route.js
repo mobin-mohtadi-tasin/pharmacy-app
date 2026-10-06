@@ -1,4 +1,3 @@
-import { getDb } from '@/lib/db';
 import { ok, err } from '@/lib/utils';
 
 export async function POST(req) {

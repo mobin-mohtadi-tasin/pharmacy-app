@@ -10,7 +10,7 @@ export async function GET(req) {
 
   const db = getDb();
 
-  const items = db.prepare(`
+  const items = await db.prepare(`
     SELECT
       ii.id, i.invoice_no, i.date, i.payment_method,
       m.name as medicine_name, g.name as group_name,
@@ -26,13 +26,13 @@ export async function GET(req) {
     ORDER BY i.date, i.created_at
   `).all(from, to);
 
-  const paymentSummary = db.prepare(`
+  const paymentSummary = await db.prepare(`
     SELECT payment_method, COUNT(*) as invoice_count, SUM(total_amount) as total
     FROM invoices WHERE date >= ? AND date <= ?
     GROUP BY payment_method ORDER BY total DESC
   `).all(from, to);
 
-  const summary = db.prepare(`
+  const summary = (await db.prepare(`
     SELECT
       SUM(ii.quantity * ii.selling_price) as total_revenue,
       SUM(ii.quantity * ii.cost_price_snapshot) as total_cost,
@@ -40,9 +40,9 @@ export async function GET(req) {
       COUNT(DISTINCT i.id) as invoice_count
     FROM invoice_items ii JOIN invoices i ON i.id = ii.invoice_id
     WHERE i.date >= ? AND i.date <= ?
-  `).get(from, to);
+  `).get(from, to)) || {};
 
-  const stock = db.prepare(`
+  const stock = await db.prepare(`
     SELECT m.name, m.strength, m.dosage_form, m.unit_type, g.name as group_name,
            m.current_stock, m.avg_cost_price, m.last_selling_price, m.low_stock_threshold
     FROM medicines m LEFT JOIN groups g ON g.id = m.group_id ORDER BY m.name

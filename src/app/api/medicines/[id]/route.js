@@ -4,7 +4,7 @@ import { ok, err } from '@/lib/utils';
 export async function GET(req, { params }) {
   const { id } = await params;
   const db = getDb();
-  const med = db.prepare(`
+  const med = await db.prepare(`
     SELECT m.*, g.name as group_name,
       COALESCE(m.expiry_date, (SELECT MIN(s.expiry_date) FROM stock_ins s WHERE s.medicine_id = m.id AND s.expiry_date IS NOT NULL AND TRIM(s.expiry_date) != '')) as expiry_date
     FROM medicines m
@@ -23,7 +23,7 @@ export async function PUT(req, { params }) {
     if (!name?.trim()) return err('Medicine name is required');
     const finalSellingPrice = last_selling_price != null && last_selling_price !== '' ? Number(last_selling_price) : (body.selling_price != null && body.selling_price !== '' ? Number(body.selling_price) : null);
     const db = getDb();
-    db.prepare(`
+    await db.prepare(`
       UPDATE medicines SET
         name=@name, generic_name=@generic_name, manufacturer=@manufacturer,
         strength=@strength, dosage_form=@dosage_form, unit_type=@unit_type,
@@ -40,7 +40,7 @@ export async function PUT(req, { params }) {
       low_stock_threshold: low_stock_threshold || 10,
       expiry_date: expiry_date || null,
     });
-    const med = db.prepare(`
+    const med = await db.prepare(`
       SELECT m.*, g.name as group_name,
         COALESCE(m.expiry_date, (SELECT MIN(s.expiry_date) FROM stock_ins s WHERE s.medicine_id = m.id AND s.expiry_date IS NOT NULL AND TRIM(s.expiry_date) != '')) as expiry_date
       FROM medicines m
@@ -56,9 +56,9 @@ export async function PUT(req, { params }) {
 export async function DELETE(req, { params }) {
   const { id } = await params;
   const db = getDb();
-  const used = db.prepare(`SELECT COUNT(*) as c FROM invoice_items WHERE medicine_id = ?`).get(id);
-  if (used.c > 0) return err('Cannot delete — medicine has sales history', 409);
-  const result = db.prepare(`DELETE FROM medicines WHERE id = ?`).run(id);
+  const used = await db.prepare(`SELECT COUNT(*) as c FROM invoice_items WHERE medicine_id = ?`).get(id);
+  if (used && used.c > 0) return err('Cannot delete — medicine has sales history', 409);
+  const result = await db.prepare(`DELETE FROM medicines WHERE id = ?`).run(id);
   if (result.changes === 0) return err('Medicine not found', 404);
   return ok({ deleted: true });
 }

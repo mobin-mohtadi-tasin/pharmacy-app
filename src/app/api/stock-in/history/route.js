@@ -22,5 +22,6 @@ export async function GET(req) {
 
   sql += ` ORDER BY s.created_at DESC LIMIT 200`;
 
-  return ok(db.prepare(sql).all(...args));
+  const rows = await db.prepare(sql).all(...args);
+  return ok(rows);
 }

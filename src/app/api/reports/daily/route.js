@@ -9,7 +9,7 @@ export async function GET(req) {
   const db = getDb();
 
   // Sales detail
-  const items = db.prepare(`
+  const items = await db.prepare(`
     SELECT
       ii.id, i.invoice_no, i.date, i.payment_method,
       m.name as medicine_name, g.name as group_name,
@@ -26,7 +26,7 @@ export async function GET(req) {
   `).all(from, to);
 
   // Payment summary
-  const paymentSummary = db.prepare(`
+  const paymentSummary = await db.prepare(`
     SELECT payment_method, COUNT(*) as invoice_count, SUM(total_amount) as total
     FROM invoices
     WHERE date >= ? AND date <= ?
@@ -35,7 +35,7 @@ export async function GET(req) {
   `).all(from, to);
 
   // Profit summary
-  const summary = db.prepare(`
+  const summary = (await db.prepare(`
     SELECT
       SUM(ii.quantity * ii.selling_price) as total_revenue,
       SUM(ii.quantity * ii.cost_price_snapshot) as total_cost,
@@ -45,14 +45,16 @@ export async function GET(req) {
     FROM invoice_items ii
     JOIN invoices i ON i.id = ii.invoice_id
     WHERE i.date >= ? AND i.date <= ?
-  `).get(from, to);
+  `).get(from, to)) || {};
 
-  const margin = summary.total_revenue > 0
-    ? (summary.total_profit / summary.total_revenue * 100).toFixed(2)
+  const totalRev = Number(summary.total_revenue) || 0;
+  const totalProf = Number(summary.total_profit) || 0;
+  const margin = totalRev > 0
+    ? ((totalProf / totalRev) * 100).toFixed(2)
     : 0;
 
   // Stock snapshot
-  const stock = db.prepare(`
+  const stock = await db.prepare(`
     SELECT m.name, m.strength, m.dosage_form, m.unit_type, g.name as group_name,
            m.current_stock, m.avg_cost_price, m.low_stock_threshold
     FROM medicines m

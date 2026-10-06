@@ -1,31 +1,44 @@
-import Database from 'better-sqlite3';
+import { createClient } from '@libsql/client';
 import path from 'path';
 import fs from 'fs';
 
-const DB_PATH = process.env.DB_PATH || './data/pharmacy.db';
-const resolvedPath = path.resolve(process.cwd(), DB_PATH);
+let _client = null;
+let _schemaInitialized = false;
 
-// Ensure the data directory exists
-const dir = path.dirname(resolvedPath);
-if (!fs.existsSync(dir)) {
-  fs.mkdirSync(dir, { recursive: true });
-}
-
-// Singleton instance
-let _db = null;
-
-export function getDb() {
-  if (!_db) {
-    _db = new Database(resolvedPath);
-    _db.pragma('journal_mode = WAL');
-    _db.pragma('foreign_keys = ON');
-    initSchema(_db);
+function normalizeArgs(args) {
+  if (!args || args.length === 0) return [];
+  if (args.length === 1 && typeof args[0] === 'object' && !Array.isArray(args[0]) && args[0] !== null) {
+    return args[0];
   }
-  return _db;
+  return args;
 }
 
-function initSchema(db) {
-  db.exec(`
+export function getClient() {
+  if (!_client) {
+    const isTurso = !!process.env.TURSO_DATABASE_URL;
+    if (isTurso) {
+      _client = createClient({
+        url: process.env.TURSO_DATABASE_URL,
+        authToken: process.env.TURSO_AUTH_TOKEN,
+      });
+    } else {
+      const dataDir = path.join(process.cwd(), 'data');
+      if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true });
+      }
+      const localFile = path.join(dataDir, 'pharmacy.db');
+      _client = createClient({
+        url: `file:${localFile}`,
+      });
+    }
+  }
+  return _client;
+}
+
+export async function ensureSchema() {
+  if (_schemaInitialized) return;
+  const client = getClient();
+  const schemaSql = `
     CREATE TABLE IF NOT EXISTS groups (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL UNIQUE,
@@ -101,38 +114,82 @@ function initSchema(db) {
 
     CREATE INDEX IF NOT EXISTS idx_medicines_name ON medicines(name);
     CREATE INDEX IF NOT EXISTS idx_medicines_group ON medicines(group_id);
+    CREATE INDEX IF NOT EXISTS idx_medicines_expiry ON medicines(expiry_date);
     CREATE INDEX IF NOT EXISTS idx_invoices_date ON invoices(date);
     CREATE INDEX IF NOT EXISTS idx_invoice_items_invoice ON invoice_items(invoice_id);
     CREATE INDEX IF NOT EXISTS idx_stock_ins_medicine ON stock_ins(medicine_id);
     CREATE INDEX IF NOT EXISTS idx_cache_query ON medicine_search_cache(query);
-  `);
-
-  // Safe migrations
-  try { db.exec(`ALTER TABLE medicines ADD COLUMN expiry_date TEXT;`); } catch {}
-  try { db.exec(`CREATE INDEX IF NOT EXISTS idx_medicines_expiry ON medicines(expiry_date);`); } catch {}
-  try { db.exec(`ALTER TABLE invoices ADD COLUMN subtotal REAL NOT NULL DEFAULT 0;`); } catch {}
-  try { db.exec(`ALTER TABLE invoices ADD COLUMN discount_percent REAL NOT NULL DEFAULT 0;`); } catch {}
-  try { db.exec(`ALTER TABLE invoices ADD COLUMN discount_amount REAL NOT NULL DEFAULT 0;`); } catch {}
-  try { db.exec(`UPDATE invoices SET subtotal = total_amount WHERE subtotal = 0 AND total_amount > 0;`); } catch {}
+  `;
   try {
-    db.exec(`
-      UPDATE medicines
-      SET expiry_date = (
-        SELECT MIN(s.expiry_date)
-        FROM stock_ins s
-        WHERE s.medicine_id = medicines.id
-          AND s.expiry_date IS NOT NULL
-          AND TRIM(s.expiry_date) != ''
-      )
-      WHERE (expiry_date IS NULL OR expiry_date = '')
-        AND EXISTS (
-          SELECT 1 FROM stock_ins s
-          WHERE s.medicine_id = medicines.id
-            AND s.expiry_date IS NOT NULL
-            AND TRIM(s.expiry_date) != ''
-        );
-    `);
-  } catch {}
+    await client.executeMultiple(schemaSql);
+    _schemaInitialized = true;
+  } catch (err) {
+    console.error('Schema initialization error:', err.message);
+  }
+}
+
+export function getDb() {
+  const client = getClient();
+  // Ensure schema in background if not done
+  ensureSchema().catch(() => {});
+
+  return {
+    client,
+    prepare: (sql) => ({
+      all: async (...args) => {
+        await ensureSchema();
+        const res = await client.execute({ sql, args: normalizeArgs(args) });
+        return res.rows;
+      },
+      get: async (...args) => {
+        await ensureSchema();
+        const res = await client.execute({ sql, args: normalizeArgs(args) });
+        return res.rows[0] || null;
+      },
+      run: async (...args) => {
+        await ensureSchema();
+        const res = await client.execute({ sql, args: normalizeArgs(args) });
+        return {
+          lastInsertRowid: Number(res.lastInsertRowid),
+          changes: res.rowsAffected,
+        };
+      },
+    }),
+    transaction: async (callback) => {
+      await ensureSchema();
+      const tx = await client.transaction('write');
+      const txDb = {
+        prepare: (sql) => ({
+          all: async (...args) => {
+            const res = await tx.execute({ sql, args: normalizeArgs(args) });
+            return res.rows;
+          },
+          get: async (...args) => {
+            const res = await tx.execute({ sql, args: normalizeArgs(args) });
+            return res.rows[0] || null;
+          },
+          run: async (...args) => {
+            const res = await tx.execute({ sql, args: normalizeArgs(args) });
+            return {
+              lastInsertRowid: Number(res.lastInsertRowid),
+              changes: res.rowsAffected,
+            };
+          },
+        }),
+      };
+      try {
+        const result = await callback(txDb);
+        await tx.commit();
+        return result;
+      } catch (err) {
+        await tx.rollback();
+        throw err;
+      }
+    },
+    exec: async (sql) => {
+      return client.executeMultiple(sql);
+    },
+  };
 }
 
 export default getDb;

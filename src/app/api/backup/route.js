@@ -4,7 +4,7 @@ import path from 'path';
 
 export async function GET() {
   try {
-    const dbPath = path.resolve(process.cwd(), process.env.DB_PATH || './data/pharmacy.db');
+    const dbPath = path.join(process.cwd(), 'data', 'pharmacy.db');
     if (!fs.existsSync(dbPath)) return err('Database file not found', 404);
 
     const fileBuffer = fs.readFileSync(dbPath);

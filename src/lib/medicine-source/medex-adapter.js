@@ -44,7 +44,7 @@ export class MedexAdapter {
 
     // Check cache first
     const db = getDb();
-    const cached = db.prepare(
+    const cached = await db.prepare(
       `SELECT results_json, fetched_at FROM medicine_search_cache WHERE query = ?`
     ).get(q);
 
@@ -82,7 +82,7 @@ export class MedexAdapter {
       const results = this._parseSearchResults(html, query);
 
       // Cache results
-      db.prepare(`
+      await db.prepare(`
         INSERT OR REPLACE INTO medicine_search_cache (query, results_json, fetched_at)
         VALUES (?, ?, datetime('now'))
       `).run(q, JSON.stringify(results));
@@ -155,7 +155,7 @@ export class MedexAdapter {
 
     const cacheKey = `brand:${sourceUrl.toLowerCase()}`;
     const db = getDb();
-    const cached = db.prepare(
+    const cached = await db.prepare(
       `SELECT results_json, fetched_at FROM medicine_search_cache WHERE query = ?`
     ).get(cacheKey);
 
@@ -299,7 +299,7 @@ export class MedexAdapter {
       };
 
       // Cache result
-      db.prepare(`
+      await db.prepare(`
         INSERT OR REPLACE INTO medicine_search_cache (query, results_json, fetched_at)
         VALUES (?, ?, datetime('now'))
       `).run(cacheKey, JSON.stringify(result));
