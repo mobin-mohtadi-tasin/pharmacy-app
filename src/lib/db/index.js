@@ -15,11 +15,13 @@ function normalizeArgs(args) {
 
 export function getClient() {
   if (!_client) {
-    const isTurso = !!process.env.TURSO_DATABASE_URL;
+    const tursoUrl = process.env.TURSO_DATABASE_URL || process.env.TURSO_CONNECTION_URL || process.env.TURSO_URL || process.env.LIBSQL_URL;
+    const tursoToken = process.env.TURSO_AUTH_TOKEN || process.env.TURSO_TOKEN;
+    const isTurso = !!tursoUrl;
     if (isTurso) {
       _client = createClient({
-        url: process.env.TURSO_DATABASE_URL,
-        authToken: process.env.TURSO_AUTH_TOKEN,
+        url: tursoUrl,
+        authToken: tursoToken,
       });
     } else {
       const dataDir = path.join(process.cwd(), 'data');
