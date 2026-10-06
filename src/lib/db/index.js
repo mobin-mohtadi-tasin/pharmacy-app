@@ -15,8 +15,8 @@ function normalizeArgs(args) {
 
 export function getClient() {
   if (!_client) {
-    const tursoUrl = process.env.TURSO_DATABASE_URL || process.env.TURSO_CONNECTION_URL || process.env.TURSO_URL || process.env.LIBSQL_URL;
-    const tursoToken = process.env.TURSO_AUTH_TOKEN || process.env.TURSO_TOKEN;
+    const tursoUrl = process.env.TURSO_DATABASE_URL || process.env.TURSO_CONNECTION_URL || process.env.TURSO_URL || process.env.LIBSQL_URL || process.env.STORAGE_URL;
+    const tursoToken = process.env.TURSO_AUTH_TOKEN || process.env.TURSO_TOKEN || process.env.STORAGE_AUTH_TOKEN || process.env.STORAGE_TOKEN;
     const isTurso = !!tursoUrl;
     if (isTurso) {
       _client = createClient({
