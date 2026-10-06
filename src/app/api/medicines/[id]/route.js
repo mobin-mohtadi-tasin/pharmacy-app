@@ -2,17 +2,21 @@ import { getDb } from '@/lib/db';
 import { ok, err } from '@/lib/utils';
 
 export async function GET(req, { params }) {
-  const { id } = await params;
-  const db = getDb();
-  const med = await db.prepare(`
-    SELECT m.*, g.name as group_name,
-      COALESCE(m.expiry_date, (SELECT MIN(s.expiry_date) FROM stock_ins s WHERE s.medicine_id = m.id AND s.expiry_date IS NOT NULL AND TRIM(s.expiry_date) != '')) as expiry_date
-    FROM medicines m
-    LEFT JOIN groups g ON g.id = m.group_id
-    WHERE m.id = ?
-  `).get(id);
-  if (!med) return err('Medicine not found', 404);
-  return ok(med);
+  try {
+    const { id } = await params;
+    const db = getDb();
+    const med = await db.prepare(`
+      SELECT m.*, g.name as group_name,
+        COALESCE(m.expiry_date, (SELECT MIN(s.expiry_date) FROM stock_ins s WHERE s.medicine_id = m.id AND s.expiry_date IS NOT NULL AND TRIM(s.expiry_date) != '')) as expiry_date
+      FROM medicines m
+      LEFT JOIN groups g ON g.id = m.group_id
+      WHERE m.id = ?
+    `).get(id);
+    if (!med) return err('Medicine not found', 404);
+    return ok(med);
+  } catch (e) {
+    return err(e.message, 500);
+  }
 }
 
 export async function PUT(req, { params }) {
@@ -54,11 +58,31 @@ export async function PUT(req, { params }) {
 }
 
 export async function DELETE(req, { params }) {
-  const { id } = await params;
-  const db = getDb();
-  const used = await db.prepare(`SELECT COUNT(*) as c FROM invoice_items WHERE medicine_id = ?`).get(id);
-  if (used && used.c > 0) return err('Cannot delete — medicine has sales history', 409);
-  const result = await db.prepare(`DELETE FROM medicines WHERE id = ?`).run(id);
-  if (result.changes === 0) return err('Medicine not found', 404);
-  return ok({ deleted: true });
+  try {
+    const { id } = await params;
+    const { searchParams } = new URL(req.url);
+    const force = searchParams.get('force') === 'true';
+
+    const db = getDb();
+    const existing = await db.prepare(`SELECT id, name FROM medicines WHERE id = ?`).get(id);
+    if (!existing) return err('Medicine not found', 404);
+
+    const used = await db.prepare(`SELECT COUNT(*) as c FROM invoice_items WHERE medicine_id = ?`).get(id);
+    if (used && used.c > 0 && !force) {
+      return err(`Cannot delete: "${existing.name}" has ${used.c} sales invoice record(s).`, 409);
+    }
+
+    // Cascade delete in transaction: remove stock-ins, invoice items (if force), and the medicine
+    await db.transaction(async (txDb) => {
+      await txDb.prepare(`DELETE FROM stock_ins WHERE medicine_id = ?`).run(id);
+      if (force && used && used.c > 0) {
+        await txDb.prepare(`DELETE FROM invoice_items WHERE medicine_id = ?`).run(id);
+      }
+      await txDb.prepare(`DELETE FROM medicines WHERE id = ?`).run(id);
+    });
+
+    return ok({ deleted: true, id: Number(id) });
+  } catch (e) {
+    return err(e.message || 'Failed to delete medicine', 500);
+  }
 }

@@ -215,14 +215,26 @@ export default function MedicinesPage() {
     refreshExpiring();
   };
 
-  const handleDelete = async (id) => {
-    const res = await fetch(`/api/medicines/${id}`, { method: 'DELETE' });
-    const data = await res.json();
-    if (!res.ok) return show(data.error, 'error');
-    show('Medicine deleted', 'success');
-    setDeleteConfirm(null);
-    loadMedicines();
-    refreshExpiring();
+  const handleDelete = async (id, force = false) => {
+    try {
+      const url = force ? `/api/medicines/${id}?force=true` : `/api/medicines/${id}`;
+      const res = await fetch(url, { method: 'DELETE' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        if (res.status === 409 && !force) {
+          if (window.confirm((data.error || 'Medicine has sales records.') + '\n\nDo you want to permanently delete this medicine and its sales history anyway?')) {
+            return handleDelete(id, true);
+          }
+        }
+        return show(data.error || 'Failed to delete medicine', 'error');
+      }
+      show('Medicine deleted successfully', 'success');
+      setDeleteConfirm(null);
+      loadMedicines();
+      refreshExpiring();
+    } catch (err) {
+      show(err.message || 'Error deleting medicine', 'error');
+    }
   };
 
   const showHistory = async (med) => {
