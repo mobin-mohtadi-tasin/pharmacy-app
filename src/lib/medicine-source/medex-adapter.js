@@ -18,6 +18,30 @@ export class MedexAdapter {
     const q = query.trim().toLowerCase();
     if (!q || q.length < 2) return { results: [], error: null, fromCache: false };
 
+    // Check if query is a direct MedEx or web URL
+    if (/^https?:\/\//i.test(query.trim()) || /medex\.com\.bd\/brands\//i.test(query.trim())) {
+      const url = query.trim().startsWith('http') ? query.trim() : `https://${query.trim()}`;
+      try {
+        const details = await this.fetchBrandDetails(url);
+        if (details && !details.error) {
+          return {
+            results: [{
+              name: details.name || 'Medicine',
+              strength: details.strength || '',
+              dosage_form: details.dosage_form || '',
+              generic_name: details.generic_name || '',
+              manufacturer: details.manufacturer || '',
+              source_url: url,
+            }],
+            error: null,
+            fromCache: false,
+          };
+        }
+      } catch (err) {
+        console.error('Direct URL fetch failed in search:', err);
+      }
+    }
+
     // Check cache first
     const db = getDb();
     const cached = db.prepare(
@@ -45,7 +69,7 @@ export class MedexAdapter {
       const res = await fetch(url, {
         signal: AbortSignal.timeout(8000),
         headers: {
-          'User-Agent': 'PharmacyBillingSystem/1.0 (local business tool; not for redistribution)',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
           'Accept': 'text/html',
         },
       });
@@ -85,17 +109,22 @@ export class MedexAdapter {
       const fullText = linkEl.text().trim(); // e.g. "Napa 500 mg (Tablet)"
       const descText = $el.find('p').text().trim(); // e.g. "Napa 500 mg (Paracetamol) is manufactured by Beximco..."
 
-      // Parse name + strength + dosage_form from title
-      // Pattern: "Brand Strength (DosageForm)" e.g. "Napa Extra 500 mg+65 mg (Tablet)"
-      const titleMatch = fullText.match(/^(.+?)\s+(\d[\d.,+\/ ]*(?:mg|mcg|g|iu|ml|%|IU)[^\s()]*(?:\s*\+\s*\d[\d.,+\/ ]*(?:mg|mcg|g|iu|ml|%|IU)[^\s()]*)*)\s*\(([^)]+)\)$/i);
-      let name = fullText;
-      let strength = '';
+      // Flexible title parsing: extract dosage form from (Dosage Form)
+      const dfMatch = fullText.match(/\(([^)]+)\)\s*$/);
       let dosageForm = '';
+      let textWithoutDf = fullText;
+      if (dfMatch) {
+        dosageForm = dfMatch[1].trim();
+        textWithoutDf = fullText.slice(0, dfMatch.index).trim();
+      }
 
-      if (titleMatch) {
-        name = titleMatch[1].trim();
-        strength = titleMatch[2].trim();
-        dosageForm = titleMatch[3].trim();
+      // Strength: search for patterns ending with strength units or percentages
+      const strMatch = textWithoutDf.match(/(\b\d[\d.,+\/%a-zA-Z\s\-]*(?:mg|mcg|g|gm|iu|ml|IU|ug|mcl|puff|%)[^\s()]*)$/i);
+      let strength = '';
+      let name = textWithoutDf;
+      if (strMatch) {
+        strength = strMatch[1].trim();
+        name = textWithoutDf.slice(0, strMatch.index).trim();
       }
 
       // Parse generic name from description: "(GenericName)"
@@ -117,7 +146,7 @@ export class MedexAdapter {
   /**
    * Fetch complete brand details from MedEx brand page.
    * Extracts unit price, strip price, MRP, calculated trade cost price,
-   * therapeutic class, and suggested unit type.
+   * therapeutic class, name, generic name, strength, dosage form, manufacturer, and suggested unit type.
    */
   async fetchBrandDetails(sourceUrl) {
     if (!sourceUrl || !sourceUrl.startsWith('http')) {
@@ -133,7 +162,9 @@ export class MedexAdapter {
     if (cached) {
       const ageHours = (Date.now() - new Date(cached.fetched_at).getTime()) / 3600000;
       if (ageHours < CACHE_TTL_HOURS) {
-        return JSON.parse(cached.results_json);
+        const parsed = JSON.parse(cached.results_json);
+        // Ensure name is present, otherwise re-fetch
+        if (parsed.name) return parsed;
       }
     }
 
@@ -149,14 +180,54 @@ export class MedexAdapter {
       const res = await fetch(sourceUrl, {
         signal: AbortSignal.timeout(8000),
         headers: {
-          'User-Agent': 'PharmacyBillingSystem/1.0 (local business tool; not for redistribution)',
-          'Accept': 'text/html',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml',
         },
       });
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const html = await res.text();
       const $ = cheerio.load(html);
+
+      // Extract Brand Name
+      let name = $('h1.brand').clone().children().remove().end().text().trim() ||
+                 $('h1').clone().children().remove().end().text().trim();
+
+      // Extract Dosage Form
+      let dosageForm = $('[title="Dosage Form"]').first().text().trim() ||
+                       $('small.h1-subtitle').first().text().trim();
+
+      // Extract Generic Name
+      let genericName = $('[title="Generic Name"]').find('a').first().text().trim() ||
+                        $('[title="Generic Name"]').first().text().trim() ||
+                        $('a[href*="/generics/"]').first().text().trim();
+
+      // Extract Strength
+      let strength = $('[title="Strength"]').first().text().trim();
+
+      // Extract Manufacturer
+      let manufacturer = $('[title="Manufactured by"]').first().find('a').first().text().trim() ||
+                         $('[title="Manufactured by"]').first().text().trim() ||
+                         $('a[href*="/companies/"]').first().text().trim();
+
+      // Fallback to <title> tag if any key fields are missing
+      const titleText = $('title').text().trim();
+      const titleParts = titleText.split('|').map(s => s.trim());
+      if (titleParts.length >= 3) {
+        if (!name && titleParts[0]) name = titleParts[0];
+        if (!strength && titleParts[1]) strength = titleParts[1];
+        if (!dosageForm && titleParts[2]) dosageForm = titleParts[2];
+        if (!manufacturer) {
+          const mfgCandidate = titleParts.find(p => /pharmaceuticals|pharma|laboratories|ltd|plc/i.test(p));
+          if (mfgCandidate) manufacturer = mfgCandidate;
+        }
+      }
+
+      // Fallback from URL slug if strength is still missing
+      if (!strength) {
+        const slugMatch = sourceUrl.match(/(\d+[\d.,+\-a-zA-Z]*(?:mg|mcg|ml|iu|g|%)[^\/]*)/i);
+        if (slugMatch) strength = slugMatch[1].replace(/-/g, ' ').trim();
+      }
 
       const pkgText = $('.package-container').text().replace(/\s+/g, ' ').trim();
 
@@ -200,7 +271,7 @@ export class MedexAdapter {
 
       // Guess unit type based on brand title, package container, and URL
       let unitType = 'strip';
-      const dosageText = ($('h1').text() + ' ' + $('.package-container').text() + ' ' + sourceUrl).toLowerCase();
+      const dosageText = (dosageForm + ' ' + name + ' ' + pkgText + ' ' + sourceUrl).toLowerCase();
       if (/tablet|capsule|cap\b|tab\b/.test(dosageText)) {
         unitType = 'strip';
       } else if (/syrup|suspension|oral solution|drop|elixir|liquid|lotion/.test(dosageText)) {
@@ -212,6 +283,12 @@ export class MedexAdapter {
       }
 
       const result = {
+        name,
+        strength,
+        dosage_form: dosageForm,
+        generic_name: genericName,
+        manufacturer,
+        source_url: sourceUrl,
         unit_price: unitPrice,
         strip_price: stripPrice,
         mrp,

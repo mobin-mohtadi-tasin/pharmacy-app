@@ -128,6 +128,12 @@ export default function StockInPage() {
 
           setForm(f => ({
             ...f,
+            name: (!existing || !f.name) && d.name ? d.name : (f.name || d.name || ''),
+            generic_name: (!existing || !f.generic_name) && d.generic_name ? d.generic_name : (f.generic_name || d.generic_name || ''),
+            manufacturer: (!existing || !f.manufacturer) && d.manufacturer ? d.manufacturer : (f.manufacturer || d.manufacturer || ''),
+            strength: (!existing || !f.strength) && d.strength ? d.strength : (f.strength || d.strength || ''),
+            dosage_form: (!existing || !f.dosage_form) && d.dosage_form ? d.dosage_form : (f.dosage_form || d.dosage_form || ''),
+            source_url: d.source_url || f.source_url || '',
             // Group: if not set locally or is new, use auto-matched group
             group_id: (!existing || !f.group_id) && d.group_id ? d.group_id : f.group_id,
             // Cost price: if new or no cost price yet, auto-fill trade cost price (~88% MRP)
@@ -138,12 +144,10 @@ export default function StockInPage() {
             mrp: (!existing || !f.mrp) && d.mrp ? String(d.mrp) : f.mrp,
             // Unit type: strip, bottle, piece
             unit_type: (!existing) && d.unit_type ? d.unit_type : f.unit_type,
-            dosage_form: f.dosage_form || d.dosage_form || '',
-            strength: f.strength || d.strength || '',
-            manufacturer: f.manufacturer || d.manufacturer || '',
           }));
 
           setAutoFilledInfo({
+            name: d.name,
             group_name: d.group_name,
             cost_price: d.cost_price,
             mrp: d.mrp,
@@ -152,6 +156,7 @@ export default function StockInPage() {
           });
 
           const summaryParts = [];
+          if (d.name) summaryParts.push(d.name);
           if (d.group_name) summaryParts.push(`Group: ${d.group_name}`);
           if (d.cost_price) summaryParts.push(`Cost: ৳${d.cost_price}`);
           if (d.selling_price) summaryParts.push(`Selling: ৳${d.selling_price}`);
@@ -214,6 +219,7 @@ export default function StockInPage() {
             mrp: form.mrp ? parseFloat(form.mrp) : null,
             selling_price: form.selling_price ? parseFloat(form.selling_price) : (form.mrp ? parseFloat(form.mrp) : null),
             avg_cost_price: parseFloat(form.cost_price),
+            expiry_date: form.expiry_date || null,
           }),
         });
         const data = await res.json();
@@ -308,7 +314,7 @@ export default function StockInPage() {
               </div>
               <div className="flex gap-2">
                 <input
-                  type="text" className="input" placeholder="e.g. Napa, Sergel, Ciprocin…"
+                  type="text" className="input" placeholder="e.g. Napa, Sergel, or paste https://medex.com.bd/brands/..."
                   value={extQuery} onChange={e => setExtQuery(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && searchExternal()}
                 />
@@ -446,12 +452,36 @@ export default function StockInPage() {
                 <label className="label">Supplier</label>
                 <input className="input" value={form.supplier} onChange={e => setF('supplier', e.target.value)} placeholder="Supplier name (optional)" />
               </div>
-              {form.source_url && (
-                <div className="col-span-2">
-                  <label className="label">Source URL</label>
-                  <a href={form.source_url} target="_blank" rel="noopener noreferrer" className="text-xs text-brand-600 hover:underline break-all">{form.source_url} ↗</a>
+              <div className="col-span-2">
+                <div className="flex items-center justify-between mb-1">
+                  <label className="label mb-0">Source URL (MedEx brand link)</label>
+                  {form.source_url && form.source_url.startsWith('http') && (
+                    <a href={form.source_url} target="_blank" rel="noopener noreferrer" className="text-xs text-brand-600 hover:underline">
+                      Open MedEx ↗
+                    </a>
+                  )}
                 </div>
-              )}
+                <div className="flex gap-2">
+                  <input
+                    className="input flex-1 text-xs"
+                    placeholder="https://medex.com.bd/brands/..."
+                    value={form.source_url}
+                    onChange={e => setF('source_url', e.target.value)}
+                  />
+                  {form.source_url && form.source_url.startsWith('http') && (
+                    <button
+                      type="button"
+                      onClick={() => fillFromExternal({ source_url: form.source_url, name: form.name })}
+                      disabled={fetchingDetails}
+                      className="btn-secondary whitespace-nowrap text-xs flex items-center gap-1"
+                      title="Fetch live details from this link"
+                    >
+                      <span>⚡</span>
+                      <span>{fetchingDetails ? 'Fetching…' : 'Auto-fill from Link'}</span>
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
 
             <button type="submit" disabled={submitting} className="btn-primary w-full btn-lg justify-center">

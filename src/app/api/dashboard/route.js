@@ -31,6 +31,22 @@ export async function GET() {
     LIMIT 20
   `).all();
 
+  // Expiring soon alerts (within 3 months)
+  const expiringAlerts = db.prepare(`
+    SELECT
+      m.id, m.name, m.strength, m.dosage_form, m.current_stock,
+      COALESCE(m.expiry_date, (SELECT MIN(s.expiry_date) FROM stock_ins s WHERE s.medicine_id = m.id AND s.expiry_date IS NOT NULL AND TRIM(s.expiry_date) != '')) as expiry_date,
+      g.name as group_name
+    FROM medicines m
+    LEFT JOIN groups g ON g.id = m.group_id
+    WHERE COALESCE(m.expiry_date, (SELECT MIN(s.expiry_date) FROM stock_ins s WHERE s.medicine_id = m.id AND s.expiry_date IS NOT NULL AND TRIM(s.expiry_date) != '')) IS NOT NULL
+      AND TRIM(COALESCE(m.expiry_date, (SELECT MIN(s.expiry_date) FROM stock_ins s WHERE s.medicine_id = m.id AND s.expiry_date IS NOT NULL AND TRIM(s.expiry_date) != ''))) != ''
+      AND COALESCE(m.expiry_date, (SELECT MIN(s.expiry_date) FROM stock_ins s WHERE s.medicine_id = m.id AND s.expiry_date IS NOT NULL AND TRIM(s.expiry_date) != '')) <= date('now', '+3 months')
+      AND m.current_stock > 0
+    ORDER BY expiry_date ASC
+    LIMIT 20
+  `).all();
+
   // Last 7 days sales chart data
   const sevenDayData = db.prepare(`
     SELECT i.date, COALESCE(SUM(i.total_amount), 0) as revenue
@@ -49,6 +65,7 @@ export async function GET() {
     today,
     stats: { ...todayStats, margin_percent: parseFloat(margin) },
     low_stock_alerts: lowStockAlerts,
+    expiring_alerts: expiringAlerts,
     seven_day_sales: sevenDayData,
     recent_invoices: recentInvoices,
   });

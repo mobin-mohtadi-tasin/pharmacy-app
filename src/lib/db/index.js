@@ -47,6 +47,7 @@ function initSchema(db) {
       avg_cost_price REAL NOT NULL DEFAULT 0,
       last_selling_price REAL,
       low_stock_threshold INTEGER DEFAULT 10,
+      expiry_date TEXT,
       created_at TEXT DEFAULT (datetime('now')),
       UNIQUE(name, strength, manufacturer)
     );
@@ -106,11 +107,32 @@ function initSchema(db) {
     CREATE INDEX IF NOT EXISTS idx_cache_query ON medicine_search_cache(query);
   `);
 
-  // Safe migrations for discount columns
+  // Safe migrations
+  try { db.exec(`ALTER TABLE medicines ADD COLUMN expiry_date TEXT;`); } catch {}
+  try { db.exec(`CREATE INDEX IF NOT EXISTS idx_medicines_expiry ON medicines(expiry_date);`); } catch {}
   try { db.exec(`ALTER TABLE invoices ADD COLUMN subtotal REAL NOT NULL DEFAULT 0;`); } catch {}
   try { db.exec(`ALTER TABLE invoices ADD COLUMN discount_percent REAL NOT NULL DEFAULT 0;`); } catch {}
   try { db.exec(`ALTER TABLE invoices ADD COLUMN discount_amount REAL NOT NULL DEFAULT 0;`); } catch {}
   try { db.exec(`UPDATE invoices SET subtotal = total_amount WHERE subtotal = 0 AND total_amount > 0;`); } catch {}
+  try {
+    db.exec(`
+      UPDATE medicines
+      SET expiry_date = (
+        SELECT MIN(s.expiry_date)
+        FROM stock_ins s
+        WHERE s.medicine_id = medicines.id
+          AND s.expiry_date IS NOT NULL
+          AND TRIM(s.expiry_date) != ''
+      )
+      WHERE (expiry_date IS NULL OR expiry_date = '')
+        AND EXISTS (
+          SELECT 1 FROM stock_ins s
+          WHERE s.medicine_id = medicines.id
+            AND s.expiry_date IS NOT NULL
+            AND TRIM(s.expiry_date) != ''
+        );
+    `);
+  } catch {}
 }
 
 export default getDb;

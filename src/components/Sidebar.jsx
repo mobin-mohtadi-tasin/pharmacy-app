@@ -2,6 +2,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
+import { useState, useEffect } from 'react';
+
 // Each tab gets its own accent color. Full class strings are listed so Tailwind can detect them.
 const navItems = [
   { href: '/', icon: '◉', label: 'Dashboard', active: 'bg-indigo-50 text-indigo-700 border-indigo-200', bar: 'bg-indigo-500', hover: 'hover:bg-indigo-50 hover:text-indigo-700' },
@@ -15,6 +17,16 @@ const navItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const [expiringCount, setExpiringCount] = useState(0);
+
+  useEffect(() => {
+    fetch('/api/medicines?expiring_soon=true')
+      .then(r => r.json())
+      .then(res => {
+        if (res.data) setExpiringCount(res.data.length);
+      })
+      .catch(() => {});
+  }, [pathname]);
 
   const handleBackup = async () => {
     const a = document.createElement('a');
@@ -59,7 +71,13 @@ export default function Sidebar() {
               />
               <span className="text-base w-5 text-center inline-block transition-transform group-hover:animate-wiggle">{item.icon}</span>
               <span>{item.label}</span>
-              {active && <span className={`ml-auto w-1.5 h-1.5 rounded-full ${item.bar} animate-pulse`} />}
+              {item.href === '/medicines' && expiringCount > 0 ? (
+                <span className="ml-auto inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                  {expiringCount}
+                </span>
+              ) : (
+                active && <span className={`ml-auto w-1.5 h-1.5 rounded-full ${item.bar} animate-pulse`} />
+              )}
             </Link>
           );
         })}

@@ -131,6 +131,23 @@ export default function BillingPage() {
     show(`Added: ${med.name}`, 'success');
   }, [show]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const medId = params.get('medicine_id');
+    if (medId) {
+      fetch(`/api/medicines/${medId}`)
+        .then(r => r.json())
+        .then(res => {
+          if (res.ok && res.data) {
+            addToCart(res.data);
+            window.history.replaceState({}, '', '/billing');
+          }
+        })
+        .catch(console.error);
+    }
+  }, [addToCart]);
+
   const updateItem = (index, field, value) => {
     setCart(prev => {
       const updated = [...prev];

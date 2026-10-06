@@ -40,9 +40,16 @@ export async function POST(req) {
 
       db.prepare(`
         UPDATE medicines
-        SET current_stock = current_stock + @qty, avg_cost_price = @avg
+        SET
+          current_stock = current_stock + @qty,
+          avg_cost_price = @avg,
+          expiry_date = CASE
+            WHEN @expiry_date IS NOT NULL AND TRIM(@expiry_date) != '' AND (expiry_date IS NULL OR TRIM(expiry_date) = '' OR @expiry_date < expiry_date)
+            THEN @expiry_date
+            ELSE expiry_date
+          END
         WHERE id = @id
-      `).run({ qty: quantity, avg: newAvg, id: medicine_id });
+      `).run({ qty: quantity, avg: newAvg, expiry_date: expiry_date || null, id: medicine_id });
     });
 
     doStockIn();

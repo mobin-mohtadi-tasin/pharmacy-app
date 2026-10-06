@@ -107,6 +107,7 @@ export default function DashboardPage() {
 
   const stats = data?.stats || {};
   const alerts = data?.low_stock_alerts || [];
+  const expiringAlerts = data?.expiring_alerts || [];
   const recent = data?.recent_invoices || [];
 
   return (
@@ -173,6 +174,65 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+
+      {/* Expiring soon alerts (within 3 months) */}
+      {expiringAlerts.length > 0 && (
+        <div className="card mt-6 border-amber-300 bg-gradient-to-r from-amber-50/40 via-rose-50/20 to-orange-50/30">
+          <div className="px-5 py-4 border-b border-amber-200 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">⏰</span>
+              <h2 className="text-sm font-bold text-amber-800">
+                Expiring Within 3 Months ({expiringAlerts.length})
+              </h2>
+              <span className="text-xs bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full font-medium">Sell Before Expiry</span>
+            </div>
+            <Link href="/medicines" className="text-xs text-amber-700 hover:text-amber-900 font-medium transition-colors">
+              View in Medicines →
+            </Link>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Medicine</th>
+                  <th>Group</th>
+                  <th>Stock to Sell</th>
+                  <th>Expiry Date</th>
+                  <th className="text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {expiringAlerts.map(med => (
+                  <tr key={med.id}>
+                    <td>
+                      <div className="font-medium text-slate-800">{med.name}</div>
+                      <div className="text-xs text-slate-500">{med.strength} {med.dosage_form && `· ${med.dosage_form}`}</div>
+                    </td>
+                    <td><span className="badge-green">{med.group_name || '—'}</span></td>
+                    <td>
+                      <span className="font-bold text-slate-800">{med.current_stock}</span>
+                    </td>
+                    <td>
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-rose-100 text-rose-700 border border-rose-300">
+                        ⏱️ {med.expiry_date}
+                      </span>
+                    </td>
+                    <td className="text-right">
+                      <Link
+                        href={`/billing?medicine_id=${med.id}`}
+                        className="btn-primary btn-sm inline-flex items-center gap-1"
+                      >
+                        <span>⚡</span>
+                        <span>Sell Now</span>
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Low stock alerts */}
       {alerts.length > 0 && (
