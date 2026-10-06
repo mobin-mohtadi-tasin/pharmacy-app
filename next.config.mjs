@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
-  serverExternalPackages: ['better-sqlite3'],
+  // Standalone output is only for self-hosted Docker, not Vercel
+  serverExternalPackages: ['@libsql/client'],
 };
 
 export default nextConfig;
